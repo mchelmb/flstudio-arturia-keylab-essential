@@ -14,6 +14,15 @@ DEFAULT_MACRO_MAP = {
     # Transport loop + Bank button
     (LOOP_BUTTON, 0): Actions.undo,
     (LOOP_BUTTON, 1): Actions.redo,
+<<<<<<< HEAD
+=======
+    (LOOP_BUTTON, 2): Actions.toggle_playlist_visibility,
+    (LOOP_BUTTON, 3): Actions.toggle_channel_rack_visibility,
+    (LOOP_BUTTON, 4): Actions.toggle_piano_roll_visibility,
+    (LOOP_BUTTON, 5): Actions.toggle_mixer_visibility,
+    (LOOP_BUTTON, 6): Actions.toggle_browser_visibility,
+    (LOOP_BUTTON, 7): Actions.toggle_plugin_visibility,
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
     (LOOP_BUTTON, NAV_WHEEL): Actions.horizontal_zoom,
     (LOOP_BUTTON, ENCODER1): Actions.scale_input_by(1, Actions.strip_jog),
     (LOOP_BUTTON, ENCODER2): Actions.scale_input_by(2, Actions.strip_jog),

@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 # name=Arturia Keylab mkII DAW (MIDIIN2/MIDIOUT2) NAV
 # url=https://github.com/rjuang/flstudio-arturia-keylab-mk2
 # receiveFrom=Arturia Keylab mkII (MIDI) NAV
+=======
+# name=Arturia Keylab mkII DAW (MIDIIN2/MIDIOUT2)
+# url=https://github.com/rjuang/flstudio-arturia-keylab-mk2
+# receiveFrom=Arturia Keylab mkII (MIDI)
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 import version
 from arturia import ArturiaController
 from arturia_processor import ArturiaMidiProcessor
@@ -27,20 +33,30 @@ def OnInit():
     print('Loaded MIDI script for Arturia Keylab mkII (ver %d)' % version.CHANGE_DATE)
 
     _controller.Sync(0xFFFF)
+<<<<<<< HEAD
     _controller.paged_display().SetPageLines('welcome', line1='Welcome to', line2='FL Studio 26')
+=======
+    _controller.paged_display().SetPageLines('welcome', line1='Connected to ', line2='   FL Studio')
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
     _controller.paged_display().SetActivePage('main')
     _controller.paged_display().SetActivePage('welcome', expires=WELCOME_DISPLAY_INTERVAL_MS)
 
     ui.setHintMsg('Script version: %d' % version.CHANGE_DATE)
 
 def OnDeInit():
+<<<<<<< HEAD
     _controller.paged_display().SetPageLines(line1='FL Studio 26', line2='disconnected')
     _controller.paged_display().Refresh()
+=======
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
     print('Unloading plugin...')
 
 def OnIdle():
     _controller.Idle()
+<<<<<<< HEAD
     _processor.OnIdle()
+=======
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 
 
 def OnMidiMsg(event):

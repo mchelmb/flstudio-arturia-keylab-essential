@@ -29,6 +29,7 @@ except Exception as e:
     PYKEYS_ENABLED = False
     print('pykeys unavailable: %s' % e)
 
+<<<<<<< HEAD
 # ctypes-based SendInput fallback for sub-interpreter compatibility (no pykeys needed)
 try:
     import ctypes
@@ -58,6 +59,8 @@ try:
 except Exception:
     CTYPES_SENDINPUT_AVAILABLE = False
 
+=======
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 # These represent the bit in which the button must be held.
 # For a macro that requires two modifiers to be held, simply add the constants.
 
@@ -123,6 +126,49 @@ class Actions:
 
     # ---------------------- AVAILABLE ACTIONS --------------------------
     @staticmethod
+<<<<<<< HEAD
+=======
+    def toggle_playlist_visibility(unused_param_value):
+        """Playlist"""
+        transport.globalTransport(midi.FPT_F5, 1)
+
+    @staticmethod
+    def toggle_channel_rack_visibility(unused_param_value):
+        """Channel Rack"""
+        transport.globalTransport(midi.FPT_F6, 1)
+
+    @staticmethod
+    def toggle_piano_roll_visibility(unused_param_value):
+        """Piano Roll"""
+        transport.globalTransport(midi.FPT_F7, 1)
+
+    @staticmethod
+    def toggle_mixer_visibility(unused_param_value):
+        """Toggle mixer"""
+        transport.globalTransport(midi.FPT_F9, 1)
+
+    @staticmethod
+    def toggle_browser_visibility(unused_param_value):
+        """Toggle browser"""
+        if PYKEYS_ENABLED:
+            Actions.fl_windows_shortcut('f8', alt=1)
+        else:
+            if ui.getVisible(midi.widBrowser):
+                ui.hideWindow(midi.widBrowser)
+            else:
+                ui.showWindow(midi.widBrowser)
+                ui.setFocused(midi.widBrowser)
+
+    @staticmethod
+    def toggle_plugin_visibility(unused_param_value):
+        """Toggle plugin"""
+        if SCRIPT_VERSION >= 9:
+            channels.showCSForm(channels.channelNumber(), -1)
+        else:
+            channels.focusEditor(channels.channelNumber())
+
+    @staticmethod
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
     def undo(unused_param_value):
         """Undo"""
         general.undoUp()
@@ -158,6 +204,15 @@ class Actions:
         transport.globalTransport(midi.FPT_F2, 1)
 
     @staticmethod
+<<<<<<< HEAD
+=======
+    def toggle_script_output_visibility(unused_param_value):
+        """Script output"""
+        Actions._navigate_to_menu('view')
+        Actions.fl_windows_shortcut('s')
+
+    @staticmethod
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
     def clone_pattern(unused_param_value):
         """Clone pattern"""
         Actions.fl_windows_shortcut('c', ctrl=1, shift=1)
@@ -172,13 +227,25 @@ class Actions:
     @staticmethod
     def enter(unused_param_value):
         """Press enter"""
+<<<<<<< HEAD
         if not Actions.fl_windows_shortcut('return'):
+=======
+        if PYKEYS_ENABLED:
+            Actions.fl_windows_shortcut('return')
+        else:
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
             ui.enter()
 
     @staticmethod
     def escape(unused_param_value):
         """Press escape"""
+<<<<<<< HEAD
         if not Actions.fl_windows_shortcut('escape'):
+=======
+        if PYKEYS_ENABLED:
+            Actions.fl_windows_shortcut('escape')
+        else:
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
             ui.escape()
 
     @staticmethod
@@ -843,6 +910,7 @@ class Actions:
 
     @staticmethod
     def fl_windows_shortcut(key, shift=0, ctrl=0, alt=0):
+<<<<<<< HEAD
         # Try pykeys first
         if PYKEYS_ENABLED:
             if pykeys.platform() == 'win':
@@ -878,6 +946,17 @@ class Actions:
             user32.SendInput(len(arr), ctypes.byref(arr), ctypes.sizeof(INPUT))
             return True
         return False
+=======
+        if not PYKEYS_ENABLED:
+            return False
+        if pykeys.platform() == 'win':
+            # FL Studio does not use the win modifier key.
+            pykeys.send(key, shift, 0, ctrl, alt)
+        else:
+            # FL Studio maps the ctrl windows modifier to cmd modifier on macs. Mac version does not use control key.
+            pykeys.send(key, shift, ctrl, 0, alt)
+        return True
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 
     @staticmethod
     def _move_song_pos(delta, unit='bars'):
@@ -899,8 +978,14 @@ class Actions:
         current_ticks = transport.getSongPos(midi.SONGLENGTH_ABSTICKS)
         transport.setSongPos(current_ticks + delta_ticks, midi.SONGLENGTH_ABSTICKS)
 
+<<<<<<< HEAD
         # Center on the current time marker
         Actions.fl_windows_shortcut("0", shift=1)
+=======
+        if PYKEYS_ENABLED:
+            # Center on the current time marker
+            Actions.fl_windows_shortcut("0", shift=1)
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 
     @staticmethod
     def _adjust_selection_range(start_delta=0, end_delta=0, factor=1.0):

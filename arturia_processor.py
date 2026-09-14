@@ -1,5 +1,8 @@
 import _random
+<<<<<<< HEAD
 import time
+=======
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 
 import arrangement
 import channels
@@ -24,6 +27,7 @@ from arturia_midi import MidiEventDispatcher
 from arturia_navigation import NavigationMode
 from arturia_leds import ArturiaLights
 from macro_actions import Actions
+<<<<<<< HEAD
 import arturia_auto_mapper
 
 SCRIPT_VERSION = general.getVersion()
@@ -60,6 +64,11 @@ PLUGIN_CATEGORY_KEY = 'right'
 # changes a setting, not a navigation action, so it shouldn't be easy to trigger by accident.
 AUTO_MAPPER_MODE_TOGGLE_LONG_PRESS_MS = 2000
 
+=======
+
+SCRIPT_VERSION = general.getVersion()
+
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 if SCRIPT_VERSION >= 8:
     import plugins
 
@@ -82,6 +91,7 @@ class ArturiaMidiProcessor:
         self._controller = controller
         self._button_hold_action_committed = False
         self._button_mode = 0
+<<<<<<< HEAD
         # Contextual window navigation state.  This is deliberately separate from
         # the existing macro/navigation modes so normal live-play behaviour is unchanged.
         self._window_select_mode = False
@@ -91,11 +101,14 @@ class ArturiaMidiProcessor:
         # Wall-clock (monotonic) timestamp of when we entered window-select/window-nav mode, used
         # to detect a stuck modal (e.g. a release event lost during a GUI stall) and auto-recover.
         self._window_mode_entered_ms = 0
+=======
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
         self._locked_mode = 0
         self._random = _random.Random()
         self._mixer_plugins_visible = False
         self._mixer_plugins_last_track = 0
 
+<<<<<<< HEAD
         # --------------------[ GUI-coherence watchdog state ]--------------------------------------
         # Cached focused-window value. Refreshed on an OnIdle interval (see _poll_focused_window)
         # rather than re-queried live on every button/knob event.
@@ -105,6 +118,8 @@ class ArturiaMidiProcessor:
         # "FL Studio's main thread was just blocked").
         self._last_idle_ms = time.monotonic() * 1000
 
+=======
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
         self._midi_id_dispatcher = (
             MidiEventDispatcher(by_midi_id)
             .SetHandler(144, self.OnCommandEvent)
@@ -135,9 +150,13 @@ class ArturiaMidiProcessor:
 
             .SetHandler(98, self.OnNavigationLeft)
             .SetHandler(99, self.OnNavigationRight)
+<<<<<<< HEAD
             .SetHandler(101, self.OnCategory)
             .SetHandler(100, self.OnPreset)
             .SetHandler(84, self.OnNavigationKnobLongPressOrShort)
+=======
+            .SetHandler(84, self.OnNavigationKnobPressed, ignore_release)
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 
             .SetHandler(49, self.OnBankNext)
             .SetHandler(48, self.OnBankPrev)
@@ -147,6 +166,7 @@ class ArturiaMidiProcessor:
             .SetHandlerForKeys(range(24, 32), self.OnBankSelect, ignore_release)
             .SetHandlerForKeys(range(104, 112), self.OnStartOrEndSliderEvent)
         )
+<<<<<<< HEAD
         # Targets for the long-press window selector.  FL Studio's window IDs let us
         # focus the actual FL window rather than emulating mouse/keyboard shortcuts.
         self._window_targets = (
@@ -158,6 +178,8 @@ class ArturiaMidiProcessor:
             ('Piano Roll', midi.widPianoRoll),
         )
 
+=======
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
         self._knob_dispatcher = (
             MidiEventDispatcher(by_control_num)
             .SetHandlerForKeys(range(16, 25), self.OnPanKnobTurned)
@@ -303,8 +325,42 @@ class ArturiaMidiProcessor:
             # Older versions, don't bother with toggle since no support for determining whether plugin or audio
             channels.showCSForm(selected)
 
+<<<<<<< HEAD
     def OnPatternKnobPress(self):
         self._show_and_focus(midi.widPianoRoll)
+=======
+    def _toggle_window_visibility(self, window):
+        if ui.getVisible(window):
+            ui.hideWindow(window)
+        else:
+            ui.showWindow(window)
+            ui.setFocused(window)
+
+    def _toggle_all_mixer_plugins(self):
+        mixer_track = channels.getTargetFxTrack(channels.selectedChannel())
+        mixer.setTrackNumber(mixer_track)
+        # TODO: Section below seems to crash in windows. Consider rate-limiting calls to globalTransport and window
+        # fetching. Also possible crash when trying to get caption when no window in focus.
+        # if mixer_track != self._mixer_plugins_last_track:
+        #    self._mixer_plugins_last_track = mixer_track
+        #    self._mixer_plugins_visible = False
+        # self._mixer_plugins_visible = ~self._mixer_plugins_visible
+        # track_name = "(%s)" % mixer.getTrackName(mixer_track)
+        # names = set()
+        # while True:
+        #    transport.globalTransport(midi.FPT_MixerWindowJog, 1)
+        #    window_title = ui.getFocusedFormCaption()
+        #    if window_title in names or track_name not in window_title:
+        #        break
+        #    names.add(window_title)
+        # if not self._mixer_plugins_visible:
+        #    # Close all windows
+        #    while ui.getFocusedFormCaption() in names:
+        #        ui.escape()
+
+    def OnPatternKnobPress(self):
+        self._toggle_window_visibility(midi.widPianoRoll)
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 
     def OnTrackPlaylistKnobPress(self):
         track_name = playlist.getTrackName(arturia_playlist.current_playlist_track())
@@ -313,14 +369,22 @@ class ArturiaMidiProcessor:
         if track_mode:
             self.OnChannelKnobPress()
         else:
+<<<<<<< HEAD
             self._show_and_focus(midi.widPlaylist)
+=======
+            self._toggle_window_visibility(midi.widPlaylist)
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 
     def OnMixerTrackKnobPress(self):
         if not channels.getTargetFxTrack(channels.selectedChannel()):
             track = self._next_free_mixer_track()
             self.OnUpdateTargetMixerTrack(track)
         else:
+<<<<<<< HEAD
             pass
+=======
+            self._toggle_all_mixer_plugins()
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 
     def OnUnassignedKnobPress(self):
         # TODO
@@ -438,6 +502,7 @@ class ArturiaMidiProcessor:
         else:
             transport.globalTransport(midi.FPT_Jog, delta)
 
+<<<<<<< HEAD
     def _show_window_target(self):
         if not self._window_targets:
             return
@@ -660,6 +725,11 @@ class ArturiaMidiProcessor:
         if not self._window_nav_mode and not self._window_select_mode:
             if self._focused_window_nav_turn(delta):
                 return
+=======
+    def OnNavigationKnobTurned(self, event):
+        delta = self._get_knob_delta(event)
+        debug.log('OnNavigationKnob', 'Delta = %d' % delta, event=event)
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
         if self._button_mode == arturia_macros.SAVE_BUTTON:
             self._change_playlist_track(delta)
         elif self._button_mode or self._locked_mode:
@@ -731,6 +801,18 @@ class ArturiaMidiProcessor:
         ui.showWindow(window)
         ui.setFocused(window)
 
+<<<<<<< HEAD
+=======
+    def _toggle_visibility(self, window):
+        if not ui.getVisible(window):
+            ui.showWindow(window)
+            ui.setFocused(window)
+            return True
+        else:
+            ui.hideWindow(window)
+            return False
+
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
     def OnTransportsPausePlay(self, event):
         debug.log('OnTransportsPausePlay', 'Dispatched', event=event)
         if self._is_pressed(event):
@@ -973,6 +1055,7 @@ class ArturiaMidiProcessor:
 
     def OnNavigationLeft(self, event):
         if self._is_pressed(event):
+<<<<<<< HEAD
             if not self._window_nav_mode and not self._window_select_mode:
                 if self._focused_window_nav_left():
                     return
@@ -990,6 +1073,18 @@ class ArturiaMidiProcessor:
                 return
             if self._button_mode & arturia_macros.RIGHT_BUTTON:
                 Actions.escape(None)
+=======
+            if self._button_mode & arturia_macros.RIGHT_BUTTON:
+                ui.escape()
+                self._button_hold_action_committed = True
+                return
+
+            if self._button_mode == arturia_macros.SAVE_BUTTON:
+                # Toggle visibility of mixer panel
+                is_visible = self._toggle_visibility(midi.widPianoRoll)
+                visible_str = 'VISIBLE' if is_visible else 'HIDDEN'
+                self._display_hint(line1='Piano Roll', line2=visible_str)
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
                 self._button_hold_action_committed = True
                 return
 
@@ -998,6 +1093,7 @@ class ArturiaMidiProcessor:
         else:
             self._button_mode &= ~arturia_macros.LEFT_BUTTON
 
+<<<<<<< HEAD
     def OnNavigationRight(self, event):
         if self._is_pressed(event):
             if not self._window_nav_mode and not self._window_select_mode:
@@ -1020,11 +1116,31 @@ class ArturiaMidiProcessor:
                 self._button_hold_action_committed = True
                 return
 
+=======
+        if config.ENABLE_NAV_BUTTON_TOGGLE_VISIBILITY:
+            self._detect_long_press(event, self.OnNavigationLeftShortPress, self.OnNavigationLeftLongPress,
+                                    duration_ms=1000)
+
+    def OnNavigationRight(self, event):
+        if self._is_pressed(event):
+            if self._button_mode & arturia_macros.LEFT_BUTTON:
+                ui.escape()
+                self._button_hold_action_committed = True
+                return
+
+            if self._button_mode == arturia_macros.SAVE_BUTTON:
+                is_visible = self._toggle_visibility(midi.widPlaylist)
+                visible_str = 'VISIBLE' if is_visible else 'HIDDEN'
+                self._display_hint(line1='Playlist', line2=visible_str)
+                self._button_hold_action_committed = True
+                return
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
             self._button_mode |= arturia_macros.RIGHT_BUTTON
             self._button_hold_action_committed = False
         else:
             self._button_mode &= ~arturia_macros.RIGHT_BUTTON
 
+<<<<<<< HEAD
     def OnCategory(self, event):
         """Arturia's dedicated CATEGORY button. Short press: existing plugin-browser behavior.
         Long press (2s, deliberately longer than the usual 450ms - this changes a setting, not a
@@ -1063,6 +1179,11 @@ class ArturiaMidiProcessor:
         if window == midi.widPlugin:
             ui.next()
             self._display_hint('Plugin Browser', 'Next Preset')
+=======
+        if config.ENABLE_NAV_BUTTON_TOGGLE_VISIBILITY:
+            self._detect_long_press(event, self.OnNavigationRightShortPress, self.OnNavigationRightLongPress,
+                                    duration_ms=1000)
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 
     def OnNavigationLeftShortPress(self, event):
         debug.log('OnNavigationLeftShortPress', 'Dispatched', event=event)
@@ -1076,6 +1197,7 @@ class ArturiaMidiProcessor:
             return
         self._navigation.NextMode()
 
+<<<<<<< HEAD
     def OnNavigationKnobLongPressOrShort(self, event):
         self._detect_long_press(
             event,
@@ -1125,6 +1247,29 @@ class ArturiaMidiProcessor:
     def OnNavigationKnobPressed(self, event):
         # Kept as the original normal short-press behaviour.  Long-press handling
         # is wrapped by _detect_long_press below.
+=======
+    def OnNavigationLeftLongPress(self, event):
+        debug.log('OnNavigationLeftLongPress', 'Dispatched', event=event)
+        if self._button_hold_action_committed:
+            return
+        # Toggle visibility of channel rack
+        is_visible = self._toggle_visibility(midi.widChannelRack)
+        visible_str = 'VISIBLE' if is_visible else 'HIDDEN'
+        self._controller.lights().SetLights({ArturiaLights.ID_NAVIGATION_LEFT: ArturiaLights.AsOnOffByte(is_visible)})
+        self._display_hint(line1='Channel Rack', line2=visible_str)
+
+    def OnNavigationRightLongPress(self, event):
+        debug.log('OnNavigationRightLongPress', 'Dispatched', event=event)
+        if self._button_hold_action_committed:
+            return
+        # Toggle visibility of mixer panel
+        is_visible = self._toggle_visibility(midi.widMixer)
+        visible_str = 'VISIBLE' if is_visible else 'HIDDEN'
+        self._controller.lights().SetLights({ArturiaLights.ID_NAVIGATION_RIGHT: ArturiaLights.AsOnOffByte(is_visible)})
+        self._display_hint(line1='Mixer Panel', line2=visible_str)
+
+    def OnNavigationKnobPressed(self, event):
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
         debug.log('OnNavigationKnobPressed', 'Dispatched', event=event)
         self._button_hold_action_committed = True
         was_locked = self._locked_mode

@@ -2,8 +2,11 @@ import _heapq
 import _random
 import time
 
+<<<<<<< HEAD
 import debug
 
+=======
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 
 class Scheduler:
     """ The purpose of this class is to provide a way for tasks to be scheduled in a thread-safe manner.
@@ -49,6 +52,7 @@ class Scheduler:
                 _heapq.heappush(self._tasks_pq, entry)
                 return
             task = entry[-1]
+<<<<<<< HEAD
             try:
                 task()
             except Exception as e:
@@ -59,3 +63,6 @@ class Scheduler:
                 # stall-recovery logic even gets a chance - see device_arturia_keylab_mkii.py's
                 # OnIdle, which calls this before _processor.OnIdle()) is a real crash vector.
                 debug.log('Scheduler', 'Task raised %s - skipped' % repr(e))
+=======
+            task()
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245

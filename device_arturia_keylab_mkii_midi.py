@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 # name=Arturia Keylab mkII (MIDI) NAV
 # url=https://github.com/rjuang/flstudio-arturia-keylab-mk2
 # receiveFrom=Arturia Keylab mkII DAW (MIDIIN2/MIDIOUT2) NAV
+=======
+# name=Arturia Keylab mkII (MIDI)
+# url=https://github.com/rjuang/flstudio-arturia-keylab-mk2
+# receiveFrom=Arturia Keylab mkII DAW (MIDIIN2/MIDIOUT2)
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 import channels
 import config
 import device
@@ -51,7 +57,11 @@ _interscript_idle_disabled = False
 
 
 def OnInit():
+<<<<<<< HEAD
     print('Loaded MIDI script for Arturia Keylab mkII MIDI NAV (ver %d)' % version.CHANGE_DATE)
+=======
+    print('Loaded MIDI script for Arturia Keylab mkII MIDI (ver %d)' % version.CHANGE_DATE)
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 
 
 def OnRefresh(flags):

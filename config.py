@@ -35,7 +35,11 @@ SLIDERS_FIRST_CONTROL_PLUGINS = False
 # If True, the sliders are initially ignored until they cross the initial value in the mixer. For example, if mixer
 # for track 1 is set to 100% and mixer is at 50%, then mixer sliders won't do anything until they cross or match the
 # value of the mixer.
+<<<<<<< HEAD
 ENABLE_MIXER_SLIDERS_PICKUP_MODE = True
+=======
+ENABLE_MIXER_SLIDERS_PICKUP_MODE = False
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 
 # If True, changes to the controls also update the FL hint panel when appropriate Useful if you can't visually see the
 # display on keyboard and need feedback from FL Studio (i.e. plugin active but UI hidden).
@@ -51,7 +55,12 @@ ENABLE_PATTERN_NAV_WHEEL_CREATE_NEW_PATTERN = TRUE_IF_ESSENTIAL_KEYBOARD
 # certainly possible.
 MAX_MIXER_VOLUME = 100
 
+<<<<<<< HEAD
 # Visibility toggle functionality has been removed from the script.
+=======
+# If True, then long pressing the left/right nav will toggle visibility of mixer/channel rack.
+ENABLE_NAV_BUTTON_TOGGLE_VISIBILITY = True
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 
 # If True, the pads will assign to the channel rack tracks as follows:
 #
@@ -70,6 +79,7 @@ ENABLE_LONG_PRESS_SUSTAIN_ON_PADS = False
 
 # If True, this will treat the pad LED layout the same as 88-key which is inverted.
 INVERT_LED_LAYOUT = False
+<<<<<<< HEAD
 
 DEBUG_DUMP_UNMAPPED_PLUGIN_PARAMS = True
 
@@ -108,3 +118,5 @@ AUTO_MAP_EXCLUDED_PLUGINS = frozenset({
     'MiniSynth', 'PoiZone', 'Sakura',
 })
 
+=======
+>>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
