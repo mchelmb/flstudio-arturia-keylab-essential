@@ -222,12 +222,13 @@ When using your keyboard, make sure that you set it to use the DAW mode (i.e., t
 the User or Analog Lab buttons).
 
 If you would like to use Analog Lab plugins and control it with the "Analog Lab" mode button, you can use the optional
-script provided here. FL Studio 20.8 also provides a native script to do this, but it has a known issue where by 
+script provided here. FL Studio 21+ also provides a native script to do this, but it has a known issue where by 
 sustain pedal notes will be suppressed. Using either script, you'll still need to configure Analog Lab plugin's MIDI In
 port to 10. This needs to be done for each plugin that is to be controlled with Analog Lab mode.
 TODO: Add video explaining this. Refer to this [link](https://forum.image-line.com/viewtopic.php?f=100&t=245527&p=1569738#p1566027)
 
 ## Features
+Please note that these Links are from the RJuangs Video Tutorial Links. I will provide alternative videos once I reach a certain level of acceptability of the features added to this fork.
 
 ### Navigation Panel and Controls ###
 

@@ -9,11 +9,8 @@ import ui
 
 import arturia_leds
 import arturia_midi
-<<<<<<< HEAD
 import arturia_native_plugins
 import arturia_auto_mapper
-=======
->>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 import config
 from arturia_display import ArturiaDisplay
 from arturia_leds import ArturiaLights
@@ -21,14 +18,11 @@ from debug import log
 
 SCRIPT_VERSION = general.getVersion()
 
-<<<<<<< HEAD
 # FL Studio's internal window ID for the plugin editor window. Used with
 # ui.getFocused() to check whether a native plugin's editor is currently
 # the focused window (mirrors Image-Line's own KeyLab Essential script).
 WID_PLUGIN = 5
 
-=======
->>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 if SCRIPT_VERSION >= 8:
     import plugins
 
@@ -87,12 +81,9 @@ class ArturiaInputControls:
     }
     MAX_NUM_PAGES = 16   # Bank 0-F for plugins and 0 - 127 for mixer
 
-<<<<<<< HEAD
     # Auto-discovered parameter fallback caps. 16 total: params 0-7 -> knobs 1-8, params 8-15 ->
     # sliders 1-8. MAX_PARAM_SCAN is a safety ceiling so a plugin with hundreds of parameters
     # doesn't turn a single OnIdle tick into a slow scan.
-=======
->>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
     @staticmethod
     def _to_rec_value(value, limit=midi.FromMIDI_Max):
         return int((value / 127.0) * limit)
@@ -151,10 +142,7 @@ class ArturiaInputControls:
         self._mixer_slider_initial_values = [-1]*9
 
         self._last_hint_time_ms = 0
-<<<<<<< HEAD
         self._last_dumped_plugin_name = None
-=======
->>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
 
         self._current_index_mixer = 0
         self._current_index_plugin = 0
@@ -252,13 +240,10 @@ class ArturiaInputControls:
     def _process_plugin_slider_event(self, event, index, value):
         status = 176 + self._current_index_plugin
         data1 = 35 + index
-<<<<<<< HEAD
 
         if self._try_native_plugin_slider(event, index, value):
             return
 
-=======
->>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
         data2 = value
         message = status + (data1 << 8) + (data2 << 16) + (arturia_midi.PLUGIN_PORT_NUM << 24)
         device.forwardMIDICC(message, 2)
@@ -272,7 +257,6 @@ class ArturiaInputControls:
         event.status = status
         event.handled = False
 
-<<<<<<< HEAD
     def _maybe_dump_unmapped_plugin(self, plugin_name):
         """If config.DEBUG_DUMP_UNMAPPED_PLUGIN_PARAMS is enabled, print the
         full parameter list of a not-yet-mapped focused plugin to FL's script
@@ -354,12 +338,6 @@ class ArturiaInputControls:
         if self._try_native_plugin_knob(event, index, data2):
             return
 
-=======
-    def _process_plugin_knob_event(self, event, index, delta):
-        status = 176 + self._current_index_plugin
-        data1 = 67 + index
-        data2 = self._update_knob_value(status, data1, delta)
->>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
         message = status + (data1 << 8) + (data2 << 16) + (arturia_midi.PLUGIN_PORT_NUM << 24)
         device.forwardMIDICC(message, 2)
         pretty_value = int((data2 / 127) * 100)
@@ -372,7 +350,6 @@ class ArturiaInputControls:
         event.status = status
         event.handled = False
 
-<<<<<<< HEAD
     def _try_native_plugin_knob(self, event, index, value):
         """Attempt to drive a recognized native FL plugin's parameter directly
         from an encoder knob, bypassing MIDI CC forwarding entirely.
@@ -406,8 +383,6 @@ class ArturiaInputControls:
         event.handled = True
         return True
 
-=======
->>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
     def _process_knobs_mixer_track(self, knob_index, delta):
         track_index = (self._current_index_mixer * 8 + knob_index) + 1
         if knob_index == 8:
@@ -432,14 +407,11 @@ class ArturiaInputControls:
         event.handled = False
 
     def ProcessSliderInput(self, event, slider_index, value):
-<<<<<<< HEAD
         if slider_index == 8:
             # Fader 9 is a dedicated master-volume fader in every mode, mixer or plugin - it never
             # gets forwarded to a plugin as a generic CC.
             self._process_sliders_track_volume(slider_index, value)
             return self
-=======
->>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
         if self._current_mode == ArturiaInputControls.INPUT_MODE_MIXER_OVERVIEW:
             self._process_sliders_track_volume(slider_index, value)
         else:
