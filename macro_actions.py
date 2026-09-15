@@ -17,33 +17,22 @@ import arturia_playlist
 
 SCRIPT_VERSION = general.getVersion()
 
-# Ensure optional modules/vars exist for static analysis (Pylance)
-pykeys = None
-ctypes = None
-plugins = None
-
 if SCRIPT_VERSION >= 8:
     import plugins
-    # expose to type checkers
-    plugins = plugins
 
 PYKEYS_ENABLED = False
 try:
-    import pykeys as _pykeys
-    pykeys = _pykeys
+    import pykeys
     PYKEYS_ENABLED = True
     print('pykeys library enabled')
 except Exception as e:
     PYKEYS_ENABLED = False
-    pykeys = None
     print('pykeys unavailable: %s' % e)
 
 # ctypes-based SendInput fallback for sub-interpreter compatibility (no pykeys needed)
 try:
-    import ctypes as _ctypes
-    from ctypes import wintypes as _wintypes
-    ctypes = _ctypes
-    wintypes = _wintypes
+    import ctypes
+    from ctypes import wintypes
     user32 = ctypes.windll.user32
     # Virtual key codes
     VK_MAP = {
@@ -59,17 +48,10 @@ try:
     # End/PgUp/PgDn) need this flag set on both key-down and key-up, or SendInput's synthesized
     # event can be ambiguous about which physical key it represents.
     EXTENDED_KEYS = {'left', 'up', 'right', 'down'}
-    # Some Python distributions/typeshed may not expose ULONG_PTR; provide a
-    # compatible alias for static checkers and runtime.
-    try:
-        ULONG_PTR = wintypes.ULONG_PTR
-    except Exception:
-        ULONG_PTR = ctypes.c_size_t
-
     class KEYBDINPUT(ctypes.Structure):
         _fields_ = [('wVk', wintypes.WORD), ('wScan', wintypes.WORD),
                     ('dwFlags', wintypes.DWORD), ('time', wintypes.DWORD),
-                    ('dwExtraInfo', ULONG_PTR)]
+                    ('dwExtraInfo', wintypes.ULONG_PTR)]
     class INPUT(ctypes.Structure):
         _fields_ = [('type', wintypes.DWORD), ('ki', KEYBDINPUT)]
     CTYPES_SENDINPUT_AVAILABLE = True
@@ -462,8 +444,8 @@ class Actions:
     @staticmethod
     def add_time_marker(unused_param_value):
         """Add time marker"""
-        window_active = (ui.getVisible(midi.widPianoRoll) and ui.getFocused(midi.widPianoRoll))
-        window_active = window_active or (ui.getVisible(midi.widPlaylist) and ui.getFocused(midi.widPlaylist))
+        window_active = ui.getVisible(midi.widPianoRoll) and ui.getFocused(midi.widPianoRoll)
+        window_active |= ui.getVisible(midi.widPlaylist) and ui.getFocused(midi.widPlaylist)
         if not window_active:
             window = midi.widPlaylist if transport.getLoopMode() else midi.widPianoRoll
             ui.showWindow(window)
@@ -761,7 +743,7 @@ class Actions:
         def scaled_fn(delta):
             fn(factor*delta)
         # Make sure to preserve the help doc
-            scaled_fn.__doc__ = fn.__doc__
+        scaled_fn.__doc__ == fn.__doc__
         return scaled_fn
 
     @staticmethod

@@ -623,8 +623,8 @@ class ArturiaMidiProcessor:
             return False
         debug.log('NavLeft', 'Focused window: %s' % str(window))
         if window == midi.widBrowser:
-            ui.navigateBrowserTabs(midi.FPT_Left)
-            self._display_hint('Browser Tab', 'Previous')
+            Actions.escape(None)
+            self._display_hint('Browser', 'Back / Escape')
         elif window in (midi.widMixer, midi.widChannelRack, midi.widPlaylist, midi.widPianoRoll):
             transport.globalTransport(midi.FPT_Jog, -1)
             self._display_hint('Navigate', 'Left')
@@ -984,8 +984,8 @@ class ArturiaMidiProcessor:
                 self._button_hold_action_committed = True
                 return
             if self._window_nav_mode and self._window_nav_target == midi.widBrowser:
-                ui.navigateBrowserTabs(midi.FPT_Left)
-                self._display_hint('Browser Tab', 'Previous')
+                Actions.escape(None)
+                self._display_hint('Browser', 'Back / Escape')
                 self._button_hold_action_committed = True
                 return
             if self._button_mode & arturia_macros.RIGHT_BUTTON:
