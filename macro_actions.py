@@ -462,8 +462,8 @@ class Actions:
     @staticmethod
     def add_time_marker(unused_param_value):
         """Add time marker"""
-        window_active = ui.getVisible(midi.widPianoRoll) and ui.getFocused(midi.widPianoRoll)
-        window_active |= ui.getVisible(midi.widPlaylist) and ui.getFocused(midi.widPlaylist)
+        window_active = (ui.getVisible(midi.widPianoRoll) and ui.getFocused(midi.widPianoRoll))
+        window_active = window_active or (ui.getVisible(midi.widPlaylist) and ui.getFocused(midi.widPlaylist))
         if not window_active:
             window = midi.widPlaylist if transport.getLoopMode() else midi.widPianoRoll
             ui.showWindow(window)
@@ -761,7 +761,7 @@ class Actions:
         def scaled_fn(delta):
             fn(factor*delta)
         # Make sure to preserve the help doc
-        scaled_fn.__doc__ == fn.__doc__
+            scaled_fn.__doc__ = fn.__doc__
         return scaled_fn
 
     @staticmethod
