@@ -1,0 +1,7 @@
+{
+  "_comment": "Per-VST default control maps. Keys are exact plugin names as FL reports them. Each entry may have 'knob' and/or 'slider' arrays of up to 8 parameter names (as they appear in vst_param_scans/<plugin>.json) - unspecified or unmatched slots fall through to the normal auto-mapper. Edit freely; this file is re-read on every patch commit, no script reload needed.",
+  "_example": {
+    "knob": ["CUTOFF FREQ", "RESO", null, null, null, null, null, null],
+    "slider": ["AMP ATTACK", "AMP DECAY", "AMP SUSTAIN", "AMP RELEASE", null, null, null, null]
+  }
+}

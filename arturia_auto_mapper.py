@@ -26,16 +26,36 @@ that don't follow that convention. There is no way to make this reliable in the 
 only defensible in the common one. A missed inference degrades to "included, maybe not top
 priority" rather than "silently invisible", except for the two spec-explicit hard-exclusion cases.
 """
+import json
+import os
 import time
 
 import channels
 import config
 import debug
+import ui
 
 from arturia_savedata import SaveData
 
 MODE_FIXED_SLOTS = 'FIXED_SLOTS'
 MODE_DYNAMIC_RANKED = 'DYNAMIC_RANKED'
+
+# --------------------[ User-editable per-VST default maps ]-----------------------------------
+# A third priority layer, between arturia_native_plugins.py (hand-curated Python, highest
+# priority, checked upstream in arturia_encoders.py) and this module's own heuristic gate/rank
+# fallback (lowest priority): a JSON file mapping plugin name -> knob/slider parameter NAMES
+# (not indices - resolved dynamically against each scan, so it survives a plugin reordering its
+# own parameter indices between versions, and stays human-readable/editable, including by an
+# external tool). Entries can be partial - any slot left null/missing falls through to the normal
+# gate/rank fallback for just that slot. See docs/AUTO_MAPPER.md for the schema.
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+USER_VST_MAP_PATH = os.path.join(_SCRIPT_DIR, 'vst_maps', 'vst_default_maps.json')
+
+# Every completed parameter scan is also dumped here as <plugin_name>.json (full name/value list,
+# not just what got mapped) - a passive, zero-effort way to build up a personal library of what
+# each plugin actually exposes, useful as the raw material for curating USER_VST_MAP_PATH by hand
+# or with an external tool. Set config.AUTO_MAP_EXPORT_SCANS = False to disable.
+SCAN_EXPORT_DIR = os.path.join(_SCRIPT_DIR, 'vst_param_scans')
 
 # Persisted into the project via SaveData (see arturia_savedata.py - encodes small key/value data
 # into the last mixer track's name, since FL doesn't limit track-name length and it saves/loads
@@ -57,7 +77,7 @@ except Exception:
     pass
 
 PATCH_SETTLE_TIME = getattr(config, 'AUTO_MAP_SETTLE_TIME', 2.5)
-MAX_PARAM_SCAN = 512
+MAX_PARAM_SCAN = 8192
 
 # Params scanned per idle tick during a settle-commit. Scanning (not gating/ranking, which are
 # cheap pure-Python list ops on an already-small result) is the part that makes real FL API calls
@@ -229,6 +249,87 @@ def rank_candidates(gated):
     return scored
 
 
+def _sanitize_filename(name):
+    """Makes a plugin name safe to use as a filename - keeps it human-readable rather than
+    hashing it, since these files are meant to be opened and read by a person (or their own
+    tooling)."""
+    safe = ''.join(c if (c.isalnum() or c in ' ._-') else '_' for c in name)
+    return safe.strip() or 'unnamed'
+
+
+def export_scan(plugin_name, params):
+    """Dumps a completed scan's full name/value list to SCAN_EXPORT_DIR/<plugin_name>.json.
+    Best-effort - a failure here (e.g. no write permission) never blocks the actual mapping."""
+    if not getattr(config, 'AUTO_MAP_EXPORT_SCANS', True):
+        return
+    try:
+        os.makedirs(SCAN_EXPORT_DIR, exist_ok=True)
+        path = os.path.join(SCAN_EXPORT_DIR, _sanitize_filename(plugin_name) + '.json')
+        payload = {
+            'plugin_name': plugin_name,
+            'params': [{'index': idx, 'name': name, 'value': value}
+                       for idx, name, value in params],
+        }
+        with open(path, 'w') as f:
+            json.dump(payload, f, indent=2)
+        if getattr(config, 'AUTO_MAP_DEBUG', False):
+            debug.log('AutoMapper', 'Exported %d params for %s -> %s' % (
+                len(params), plugin_name, path))
+    except Exception as e:
+        debug.log('AutoMapper', 'Scan export failed (non-fatal): %s' % repr(e))
+
+
+_user_vst_map_cache = None
+
+
+def _load_user_vst_map():
+    """Re-reads USER_VST_MAP_PATH fresh on every call (cheap for a small JSON file, and means
+    edits made externally - by hand or by your own tooling - take effect on the very next patch
+    commit, no script reload needed). Returns {} on any error (missing file, malformed JSON) -
+    never raises, so a syntax mistake in the file degrades to "no user maps" rather than breaking
+    the whole auto-mapper."""
+    try:
+        with open(USER_VST_MAP_PATH, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+    except Exception as e:
+        debug.log('AutoMapper', 'vst_default_maps.json failed to parse (ignored): %s' % repr(e))
+        return {}
+
+
+def _resolve_json_slots(plugin_name, params):
+    """Looks up plugin_name in the user VST map and resolves each named slot to its current
+    parameter index against this scan's actual results (case-insensitive exact match). Returns
+    (knob_prefill, slider_prefill, claimed) - two 8-entry lists (None where unresolved/unspecified)
+    and the set of indices they claim, so the normal gate/rank fallback never double-assigns
+    something the user's map already claimed."""
+    entry = _load_user_vst_map().get(plugin_name)
+    knob_prefill = [None] * 8
+    slider_prefill = [None] * 8
+    claimed = set()
+    if not entry:
+        return knob_prefill, slider_prefill, claimed
+
+    name_to_index = {}
+    for idx, name, _value in params:
+        name_to_index.setdefault(name.lower(), idx)
+
+    for label, prefill in (('knob', knob_prefill), ('slider', slider_prefill)):
+        wanted = entry.get(label) or []
+        for i, param_name in enumerate(wanted[:8]):
+            if not param_name:
+                continue
+            idx = name_to_index.get(str(param_name).lower())
+            if idx is not None:
+                prefill[i] = idx
+                claimed.add(idx)
+            else:
+                debug.log('AutoMapper', 'User map: "%s" not found in current scan for %s' % (
+                    param_name, plugin_name))
+    return knob_prefill, slider_prefill, claimed
+
+
 def _match_named_slots(discovered_names, slots):
     """Greedy best-effort match: for each hardware-printed slot, in priority order, tries its
     keywords longest-first against still-unclaimed discovered parameter names. discovered_names
@@ -298,14 +399,19 @@ class AutoMapper:
             if self._debug_enabled():
                 debug.log('AutoMapper', 'Failed to persist mode toggle (non-fatal)')
         try:
-            channel_number = channels.channelNumber()
-            plugin_name = plugins.getPluginName(channel_number, useGlobalIndex=True)
-            if plugin_name and plugin_name not in config.AUTO_MAP_EXCLUDED_PLUGINS:
-                self._pending_key = None
-                self._pending_since_ms = None
-                self._start_scan((channel_number, plugin_name))
-        except Exception:
-            pass
+            if not ui.getFocused(5):  # WID_PLUGIN
+                if self._debug_enabled():
+                    debug.log('AutoMapper', 'ToggleMode: no plugin focused, nothing to re-map yet')
+            else:
+                channel_number = channels.channelNumber()
+                plugin_name = ui.getFocusedPluginName()
+                if plugin_name and plugin_name not in config.AUTO_MAP_EXCLUDED_PLUGINS:
+                    self._pending_key = None
+                    self._pending_since_ms = None
+                    self._start_scan((channel_number, plugin_name))
+        except Exception as e:
+            if self._debug_enabled():
+                debug.log('AutoMapper', 'ToggleMode re-map failed: %s' % repr(e))
         return new_mode
 
     def NotifyChannelPlugin(self, channel_number, plugin_name, now_ms):
@@ -340,10 +446,17 @@ class AutoMapper:
         channel_number, plugin_name = key
         if SCRIPT_VERSION is None or SCRIPT_VERSION < 8:
             return
+        debug_on = self._debug_enabled()
         try:
-            count = min(plugins.getParamCount(channel_number), MAX_PARAM_SCAN)
-        except Exception:
+            raw_count = plugins.getParamCount(channel_number)
+            count = min(raw_count, MAX_PARAM_SCAN)
+            if debug_on:
+                debug.log('AutoMapper', 'Starting scan: %s, channel %d, %d params (capped at %d)'
+                          % (plugin_name, channel_number, raw_count, MAX_PARAM_SCAN))
+        except Exception as e:
             count = 0
+            if debug_on:
+                debug.log('AutoMapper', 'getParamCount failed: %s' % repr(e))
         self._scan = {
             'channel_number': channel_number,
             'plugin_name': plugin_name,
@@ -377,6 +490,9 @@ class AutoMapper:
     def _commit(self, key, params):
         channel_number, plugin_name = key
         debug_on = self._debug_enabled()
+
+        export_scan(plugin_name, params)
+
         gated = gate_candidates(params, log=debug_on)
         ranked = rank_candidates(gated)
 
@@ -386,12 +502,15 @@ class AutoMapper:
             for i, c in enumerate(ranked[:16]):
                 debug.log('AutoMapper', 'ranked candidates: %d: %s' % (i + 1, c[1]))
 
+        knob_prefill, slider_prefill, claimed = _resolve_json_slots(plugin_name, params)
+
         mode = self._get_mode()
         if mode == 'DYNAMIC_RANKED':
-            new_map = self._build_dynamic_map(ranked)
+            new_map = self._build_dynamic_map(ranked, knob_prefill, slider_prefill, claimed)
         else:
             discovered_names = [(idx, name) for idx, name, _value, _dep in gated]
-            new_map = self._build_fixed_slots_map(discovered_names, ranked)
+            new_map = self._build_fixed_slots_map(discovered_names, ranked,
+                                                   knob_prefill, slider_prefill, claimed)
 
         # Atomic replace - the whole map is built above before this assignment, never mutated
         # in place, so a knob/slider read mid-calculation can't see a half-built map.
@@ -408,32 +527,43 @@ class AutoMapper:
                         label, i + 1, names_by_index.get(param_index, '?')))
 
     @staticmethod
-    def _build_dynamic_map(ranked):
-        """AUTO_MAP_MODE == 'DYNAMIC_RANKED': every slot filled in ranked order, no fixed
-        hardware-label identity at all."""
-        knob_params = [None] * 8
-        slider_params = [None] * 8
-        it = iter(c[0] for c in ranked)
+    def _build_dynamic_map(ranked, knob_prefill, slider_prefill, claimed):
+        """AUTO_MAP_MODE == 'DYNAMIC_RANKED': the user's JSON map (if any) is honored first, then
+        every remaining slot filled in ranked order - no fixed hardware-label identity at all."""
+        knob_params = list(knob_prefill)
+        slider_params = list(slider_prefill)
+        leftover = iter(c[0] for c in ranked if c[0] not in claimed)
         for i in range(8):
-            knob_params[i] = next(it, None)
+            if knob_params[i] is None:
+                knob_params[i] = next(leftover, None)
         for i in range(8):
-            slider_params[i] = next(it, None)
+            if slider_params[i] is None:
+                slider_params[i] = next(leftover, None)
         return {'knob': knob_params, 'slider': slider_params}
 
     @staticmethod
-    def _build_fixed_slots_map(discovered_names, ranked):
-        """AUTO_MAP_MODE == 'FIXED_SLOTS' (default): knobs 1-4 and both slider ADSR quads keep
-        their fixed hardware-label identity via plain name matching (no gating/ranking needed -
-        these are always top priority by definition). The 4 generic Param knobs are filled from
-        the gated/ranked pool, skipping anything the fixed slots already claimed. Sliders have no
-        generic slots (all 8 are the two ADSR quads), so nothing else needs the ranked pool."""
-        knob_params, claimed = _match_named_slots(discovered_names, NAMED_KNOBS)
-        slider_params, slider_claimed = _match_named_slots(discovered_names, NAMED_SLIDERS)
-        claimed |= slider_claimed
+    def _build_fixed_slots_map(discovered_names, ranked, knob_prefill, slider_prefill, claimed):
+        """AUTO_MAP_MODE == 'FIXED_SLOTS' (default): the user's JSON map (if any) is honored
+        first. Any knob/slider slot it doesn't cover falls through to the existing fixed
+        hardware-label identity (Cutoff/Resonance/.../ADSR x2, via plain name matching), and
+        anything still empty after that (generic Param knobs, or an ADSR slot with no match) is
+        filled from the gated/ranked pool."""
+        matched_knobs, name_claimed = _match_named_slots(discovered_names, NAMED_KNOBS)
+        matched_sliders, slider_name_claimed = _match_named_slots(discovered_names, NAMED_SLIDERS)
 
-        knob_params += [None] * (8 - len(knob_params))  # NAMED_KNOBS only defines slots 0-3
-        leftover = iter(c[0] for c in ranked if c[0] not in claimed)
-        for i in range(len(knob_params)):
+        # NAMED_KNOBS only defines slots 0-3 - matched_knobs may be shorter than 8.
+        knob_params = list(knob_prefill)
+        for i, v in enumerate(matched_knobs):
+            if knob_params[i] is None:
+                knob_params[i] = v
+        slider_params = list(slider_prefill)
+        for i, v in enumerate(matched_sliders):
+            if slider_params[i] is None:
+                slider_params[i] = v
+
+        all_claimed = claimed | name_claimed | slider_name_claimed
+        leftover = iter(c[0] for c in ranked if c[0] not in all_claimed)
+        for i in range(8):
             if knob_params[i] is None:
                 knob_params[i] = next(leftover, None)
 

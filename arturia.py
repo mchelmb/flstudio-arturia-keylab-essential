@@ -71,13 +71,8 @@ class ArturiaController:
                 ArturiaLights.ID_TRANSPORTS_PLAY: ArturiaLights.AsOnOffByte(transport.getSongPos() > 0),
                 ArturiaLights.ID_GLOBAL_OUT: ArturiaLights.AsOnOffByte(
                     arrangement.selectionEnd() > arrangement.selectionStart()),
-<<<<<<< HEAD
                 ArturiaLights.ID_NAVIGATION_LEFT: ArturiaLights.LED_OFF,
                 ArturiaLights.ID_NAVIGATION_RIGHT: ArturiaLights.LED_OFF,
-=======
-                ArturiaLights.ID_NAVIGATION_LEFT: ArturiaLights.AsOnOffByte(ui.getVisible(midi.widChannelRack)),
-                ArturiaLights.ID_NAVIGATION_RIGHT: ArturiaLights.AsOnOffByte(ui.getVisible(midi.widMixer)),
->>>>>>> 28c38f7e1071f92d7b350077ef5720f67257b245
                 ArturiaLights.ID_OCTAVE_PLUS: ArturiaLights.LED_OFF,
                 ArturiaLights.ID_OCTAVE_MINUS: ArturiaLights.LED_OFF,
             }
