@@ -17,22 +17,33 @@ import arturia_playlist
 
 SCRIPT_VERSION = general.getVersion()
 
+# Ensure optional modules/vars exist for static analysis (Pylance)
+pykeys = None
+ctypes = None
+plugins = None
+
 if SCRIPT_VERSION >= 8:
     import plugins
+    # expose to type checkers
+    plugins = plugins
 
 PYKEYS_ENABLED = False
 try:
-    import pykeys
+    import pykeys as _pykeys
+    pykeys = _pykeys
     PYKEYS_ENABLED = True
     print('pykeys library enabled')
 except Exception as e:
     PYKEYS_ENABLED = False
+    pykeys = None
     print('pykeys unavailable: %s' % e)
 
 # ctypes-based SendInput fallback for sub-interpreter compatibility (no pykeys needed)
 try:
-    import ctypes
-    from ctypes import wintypes
+    import ctypes as _ctypes
+    from ctypes import wintypes as _wintypes
+    ctypes = _ctypes
+    wintypes = _wintypes
     user32 = ctypes.windll.user32
     # Virtual key codes
     VK_MAP = {
@@ -48,10 +59,17 @@ try:
     # End/PgUp/PgDn) need this flag set on both key-down and key-up, or SendInput's synthesized
     # event can be ambiguous about which physical key it represents.
     EXTENDED_KEYS = {'left', 'up', 'right', 'down'}
+    # Some Python distributions/typeshed may not expose ULONG_PTR; provide a
+    # compatible alias for static checkers and runtime.
+    try:
+        ULONG_PTR = wintypes.ULONG_PTR
+    except Exception:
+        ULONG_PTR = ctypes.c_size_t
+
     class KEYBDINPUT(ctypes.Structure):
         _fields_ = [('wVk', wintypes.WORD), ('wScan', wintypes.WORD),
                     ('dwFlags', wintypes.DWORD), ('time', wintypes.DWORD),
-                    ('dwExtraInfo', wintypes.ULONG_PTR)]
+                    ('dwExtraInfo', ULONG_PTR)]
     class INPUT(ctypes.Structure):
         _fields_ = [('type', wintypes.DWORD), ('ki', KEYBDINPUT)]
     CTYPES_SENDINPUT_AVAILABLE = True
