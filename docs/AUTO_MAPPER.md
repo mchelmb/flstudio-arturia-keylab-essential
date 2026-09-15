@@ -43,8 +43,25 @@ Re-read fresh on every patch commit — no script reload needed to see a change 
   plugin changed its parameter names in an update), that slot logs a note (with
   `AUTO_MAP_DEBUG = True`) and falls through to the normal fallback instead of silently doing
   nothing.
-- Knob/slider 9 are never covered by this file - they're permanently hardwired elsewhere (channel
-  volume and mixer master, respectively).
+~~Knob/slider 9 are never covered by this file - they're permanently hardwired elsewhere (channel
+  volume and mixer master, respectively).~~
+
+## Addendum: Encoder 9 (original KeyLab Essential 61) firmware limitation
+
+On the original KeyLab Essential 61 (pre-MK3) hardware, Encoder 9 does not emit DAW-mode
+messages. Encoder 9 can still be assigned in User Mode (where it behaves as a normal MIDI CC),
+but DAW Mode uses a separate firmware-defined control path that the original Essential 61
+does not provide for Encoder 9. Because of this hardware limitation, the runtime code in this
+project no longer relies on Encoder 9 for DAW-mode controls. Where the code previously used
+knob 9 for special behaviour (VST/channel volume), that handling has been removed to avoid
+unreliable or silent behaviour on affected hardware.
+
+If you are using a newer KeyLab (MK3 or later), or a different model that exposes Encoder 9 in
+DAW Mode, you may be able to re-enable specific behaviour for that knob via configuration or
+patches; however the original Essential 61 will not produce DAW-mode messages for Encoder 9.
+
+For more details, see the project README and the issue tracker discussion referencing the
+original Essential 61 firmware limitation.
 
 ## Building your own maps: the scan export
 

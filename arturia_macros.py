@@ -1,5 +1,5 @@
 from macro_actions import Actions
-from macro_actions import ENCODER1, ENCODER2, ENCODER3, ENCODER4, ENCODER5, ENCODER6, ENCODER7, ENCODER8, ENCODER9
+from macro_actions import ENCODER1, ENCODER2, ENCODER3, ENCODER4, ENCODER5, ENCODER6, ENCODER7, ENCODER8
 from macro_actions import LOOP_BUTTON, LEFT_BUTTON, REC_BUTTON, RIGHT_BUTTON, PLAY_BUTTON, SAVE_BUTTON, STOP_BUTTON
 from macro_actions import NAV_WHEEL
 
@@ -23,7 +23,8 @@ DEFAULT_MACRO_MAP = {
     (LOOP_BUTTON, ENCODER6): Actions.noop,
     (LOOP_BUTTON, ENCODER7): Actions.noop,
     (LOOP_BUTTON, ENCODER8): Actions.noop,
-    (LOOP_BUTTON, ENCODER9): Actions.noop,
+    # Encoder 9 mappings removed: original KeyLab Essential 61 firmware
+    # does not emit DAW-mode messages for encoder 9. See docs addendum.
 
     # Record + Bank button
     (REC_BUTTON, 0): Actions.close_all_plugin_windows,
@@ -43,7 +44,7 @@ DEFAULT_MACRO_MAP = {
     (REC_BUTTON, ENCODER6): Actions.scrub_time_by_eigth_bars,
     (REC_BUTTON, ENCODER7): Actions.scrub_time_by_quarter_bars,
     (REC_BUTTON, ENCODER8): Actions.scrub_time_by_half_bars,
-    (REC_BUTTON, ENCODER9): Actions.scrub_time_by_bars,
+    # (REC_BUTTON, ENCODER9): removed (see addendum)
 
     # Play + Bank button
     (PLAY_BUTTON, 0): Actions.rewind_to_beginning,
@@ -63,7 +64,7 @@ DEFAULT_MACRO_MAP = {
     (PLAY_BUTTON, ENCODER6): Actions.noop,
     (PLAY_BUTTON, ENCODER7): Actions.noop,
     (PLAY_BUTTON, ENCODER8): Actions.noop,
-    (PLAY_BUTTON, ENCODER9): Actions.noop,
+    # (PLAY_BUTTON, ENCODER9): removed (see addendum)
 
     # Stop + Bank button
     (STOP_BUTTON, 0): Actions.deselect_all,
@@ -83,7 +84,7 @@ DEFAULT_MACRO_MAP = {
     (STOP_BUTTON, ENCODER6): Actions.noop,
     (STOP_BUTTON, ENCODER7): Actions.noop,
     (STOP_BUTTON, ENCODER8): Actions.noop,
-    (STOP_BUTTON, ENCODER9): Actions.noop,
+    # (STOP_BUTTON, ENCODER9): removed (see addendum)
 
     # Nav Right arrow + Bank button
     (RIGHT_BUTTON, 0): Actions.open_mixer_plugin,
@@ -103,7 +104,7 @@ DEFAULT_MACRO_MAP = {
     (RIGHT_BUTTON, ENCODER6): Actions.scrub_selection_end_by_eighth_bars,
     (RIGHT_BUTTON, ENCODER7): Actions.scrub_selection_end_by_half_bars,
     (RIGHT_BUTTON, ENCODER8): Actions.scrub_selection_end_by_quarter_bars,
-    (RIGHT_BUTTON, ENCODER9): Actions.scrub_selection_end_by_eighth_bars,
+    # (RIGHT_BUTTON, ENCODER9): removed (see addendum)
 
     # Nav Left arrow + Bank button
     (LEFT_BUTTON, 0): Actions.channel_rack_up,
@@ -123,7 +124,7 @@ DEFAULT_MACRO_MAP = {
     (LEFT_BUTTON, ENCODER6): Actions.scrub_selection_start_by_eighth_bars,
     (LEFT_BUTTON, ENCODER7): Actions.scrub_selection_start_by_quarter_bars,
     (LEFT_BUTTON, ENCODER8): Actions.scrub_selection_start_by_half_bars,
-    (LEFT_BUTTON, ENCODER9): Actions.scrub_selection_start_by_bars,
+    # (LEFT_BUTTON, ENCODER9): removed (see addendum)
 }
 
 

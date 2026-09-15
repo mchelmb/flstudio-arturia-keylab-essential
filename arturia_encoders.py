@@ -327,15 +327,14 @@ class ArturiaInputControls:
 
     def _process_plugin_knob_event(self, event, index, delta):
         if index == 8:
-            # Encoder 9 (above the master fader) is a dedicated "VST/channel volume" control in
-            # every mode - FL's own generic per-instrument volume knob (visible in the Channel
-            # Rack), not the mixer master and not any plugin-specific internal gain parameter.
-            # Universal: works identically for every plugin regardless of what it exposes.
-            channel = channels.selectedChannel()
-            volume = min(1.0, max(0.0, channels.getChannelVolume(channel) + (delta / 100.0)))
-            channels.setChannelVolume(channel, volume)
-            self._display_hint('VST Volume Ch: %2d' % (channel + 1), '%d%%' % round(volume * 100),
-                               fl_hint=config.ENABLE_CONTROLS_FL_HINTS)
+            # Encoder 9 handling removed: original KeyLab Essential 61 firmware does not emit
+            # DAW-mode messages for encoder 9. Relying on this knob in DAW Mode is
+            # unreliable for the original Essential 61, so runtime handling was removed.
+            # In User Mode encoder 9 remains assignable via MIDI Control Center; DAW Mode
+            # will not generate a usable message for this knob on the original hardware.
+            # No action is taken here to avoid unintended behavior.
+            # Optionally, display a short hint once to inform the user (disabled by default).
+            # self._display_hint('Enc9 Disabled', 'DAW firmware', fl_hint=config.ENABLE_CONTROLS_FL_HINTS)
             event.handled = True
             return
 
