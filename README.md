@@ -155,7 +155,10 @@ The original, pre-MK3 KeyLab Essential 61 firmware does not emit a DAW-mode mess
 does not provide a reliable way to preserve the navigation controls and recover Encoder 9 at the
 same time. The workaround is therefore considered infeasible and Encoder 9 support is disabled.
 
-Per-VST/plugin volume control is planned for the next release as a dedicated Encoder 8 override.
+Long-pressing the PRESET button toggles a project-persisted Encoder 8 volume override. When enabled,
+Encoder 8 is hard-mapped to the volume parameter discovered in that VST's own exposed parameter
+list; long-press again to disable it. Because parameter indices and names vary by VST, the
+auto-mapper searches for the volume parameter during its scan.
 
 ---
 

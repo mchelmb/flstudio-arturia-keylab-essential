@@ -1056,13 +1056,20 @@ class ArturiaMidiProcessor:
         debug.log('OnCategoryLongPress', 'Toggled auto-map mode to %s' % new_mode)
 
     def OnPreset(self, event):
-        """Arturia's dedicated PRESET button. Steps to the next preset in the focused plugin."""
-        if not self._is_pressed(event):
-            return
+        """Short press advances a preset; long press toggles the Encoder 8 volume override."""
+        self._detect_long_press(event, self.OnPresetShortPress, self.OnPresetLongPress,
+                                duration_ms=AUTO_MAPPER_MODE_TOGGLE_LONG_PRESS_MS)
+
+    def OnPresetShortPress(self, event):
         window = self._window_nav_target if self._window_nav_mode else self._get_focused_window()
         if window == midi.widPlugin:
             ui.next()
             self._display_hint('Plugin Browser', 'Next Preset')
+
+    def OnPresetLongPress(self, event):
+        enabled = arturia_auto_mapper.get_instance().ToggleEncoder8VolumeOverride()
+        self._display_hint('Encoder 8 Volume', 'Enabled' if enabled else 'Disabled')
+        debug.log('OnPresetLongPress', 'Encoder 8 volume override %s' % ('enabled' if enabled else 'disabled'))
 
     def OnNavigationLeftShortPress(self, event):
         debug.log('OnNavigationLeftShortPress', 'Dispatched', event=event)

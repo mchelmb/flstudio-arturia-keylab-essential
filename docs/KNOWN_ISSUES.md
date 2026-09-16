@@ -33,8 +33,12 @@ means the navigation encoder and side controls cannot be retained reliably at th
 The combined User-mode/DAW-mode workaround is therefore a dead end for this hardware, and the
 project intentionally leaves Encoder 9 disabled.
 
-Per-VST/plugin volume control is not implemented through Encoder 9. A dedicated Encoder 8
-override is planned for the next release.
+Per-VST/plugin volume control is not implemented through Encoder 9. Long-press the PRESET button
+to enable a project-persisted Encoder 8 override; while enabled in Channel Plugin mode, Encoder 8
+is hard-mapped to the volume parameter discovered in that VST's exposed parameter list instead of
+its auto-mapped parameter. The auto-mapper searches for the volume parameter during each scan
+because its parameter index varies by VST. Long-press PRESET again to disable the override. If a
+VST exposes no recognizable volume parameter, the display reports `VST Volume: Not found`.
 
 ### FLEX's Tags/category filter panel is not automatable
 FLEX's internal tag-filter dropdown (opened by clicking "Tags" near its search box) appears to be

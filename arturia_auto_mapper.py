@@ -64,6 +64,7 @@ SCAN_EXPORT_DIR = os.path.join(_SCRIPT_DIR, 'vst_param_scans')
 # else (e.g. drum-pad pattern data) already uses SaveData in this project - always Load() before
 # Commit() so a write here never clobbers unrelated keys.
 _SAVEDATA_KEY = 'auto_map_mode'
+_ENCODER8_VOLUME_KEY = 'encoder8_volume_override'
 _MODE_TO_INT = {MODE_FIXED_SLOTS: 0, MODE_DYNAMIC_RANKED: 1}
 _INT_TO_MODE = {value: key for key, value in _MODE_TO_INT.items()}
 
@@ -136,6 +137,24 @@ NAMED_SLIDERS = [
     frozenset({'sustain', 'sus'}),
     frozenset({'release', 'rel'}),
 ]
+
+VOLUME_NAME_PRIORITY = (
+    'master volume', 'output volume', 'main volume', 'volume', 'output level', 'level',
+)
+
+
+def find_volume_param(params):
+    """Find the best exposed VST volume parameter for the Encoder 8 override."""
+    candidates = [(idx, name) for idx, name, _value in params]
+    for wanted in VOLUME_NAME_PRIORITY:
+        for idx, name in candidates:
+            if name.strip().lower() == wanted:
+                return idx
+    for wanted in VOLUME_NAME_PRIORITY:
+        for idx, name in candidates:
+            if wanted in name.lower():
+                return idx
+    return None
 
 
 def _is_excluded_name(name):
@@ -361,6 +380,7 @@ class AutoMapper:
         self._pending_key = None
         self._pending_since_ms = None
         self._active_map = {}       # channel_number -> {'knob': [8], 'slider': [8]}
+        self._volume_params = {}    # channel_number -> discovered VST volume parameter index
         self._savedata = SaveData()
         self._mode = None           # lazily loaded - see _get_mode()
         self._scan = None           # in-progress chunked scan state, or None
@@ -413,6 +433,25 @@ class AutoMapper:
             if self._debug_enabled():
                 debug.log('AutoMapper', 'ToggleMode re-map failed: %s' % repr(e))
         return new_mode
+
+    def IsEncoder8VolumeOverrideEnabled(self):
+        try:
+            self._savedata.Load()
+            stored = self._savedata.Get(_ENCODER8_VOLUME_KEY)
+            return bool(stored and stored[0])
+        except Exception:
+            return False
+
+    def ToggleEncoder8VolumeOverride(self):
+        enabled = not self.IsEncoder8VolumeOverrideEnabled()
+        try:
+            self._savedata.Load()
+            self._savedata.Put(_ENCODER8_VOLUME_KEY, [1 if enabled else 0])
+            self._savedata.Commit()
+        except Exception:
+            if self._debug_enabled():
+                debug.log('AutoMapper', 'Failed to persist Encoder 8 volume override (non-fatal)')
+        return enabled
 
     def NotifyChannelPlugin(self, channel_number, plugin_name, now_ms):
         """Call every idle tick with the currently selected channel + plugin name. Starts/resets
@@ -515,6 +554,7 @@ class AutoMapper:
         # Atomic replace - the whole map is built above before this assignment, never mutated
         # in place, so a knob/slider read mid-calculation can't see a half-built map.
         self._active_map[channel_number] = new_map
+        self._volume_params[channel_number] = find_volume_param(params)
 
         if debug_on:
             self._log_committed_map(plugin_name, new_map, dict((c[0], c[1]) for c in ranked))
@@ -572,6 +612,9 @@ class AutoMapper:
     def GetKnobParam(self, channel_number, index):
         m = self._active_map.get(channel_number)
         return m['knob'][index] if m else None
+
+    def GetVolumeParam(self, channel_number):
+        return self._volume_params.get(channel_number)
 
     def GetSliderParam(self, channel_number, index):
         m = self._active_map.get(channel_number)

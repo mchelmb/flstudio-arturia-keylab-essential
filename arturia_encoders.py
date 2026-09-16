@@ -197,6 +197,11 @@ class ArturiaInputControls:
                            fl_hint=config.ENABLE_CONTROLS_FL_HINTS)
 
     def ProcessKnobInput(self, event, knob_index, delta):
+        if (self._current_mode == ArturiaInputControls.INPUT_MODE_CHANNEL_PLUGINS
+            and knob_index == 7
+            and arturia_auto_mapper.get_instance().IsEncoder8VolumeOverrideEnabled()):
+            self._process_plugin_volume_event(event, delta)
+            return self
         if self._current_mode == ArturiaInputControls.INPUT_MODE_MIXER_OVERVIEW:
             self._process_knobs_mixer_track(knob_index, delta)
         else:
@@ -352,6 +357,24 @@ class ArturiaInputControls:
         event.data1 = data1
         event.data2 = data2
         event.status = status
+        event.handled = False
+
+    def _process_plugin_volume_event(self, event, delta):
+        channel = channels.channelNumber()
+        param_index = arturia_auto_mapper.get_instance().GetVolumeParam(channel)
+        if param_index is None or SCRIPT_VERSION < 8 or not ui.getFocused(WID_PLUGIN):
+            self._display_hint('VST Volume', 'Not found')
+            event.handled = True
+            return
+        status = 176 + self._current_index_plugin
+        key = (channel, status, 23)
+        if key not in self._plugin_knob_map:
+            self._plugin_knob_map[key] = round(127 * plugins.getParamValue(param_index, channel))
+        value = self._update_knob_value(status, 23, delta)
+        plugins.setParamValue(value / 127.0, param_index, channel)
+        param_name = plugins.getParamName(param_index, channel)
+        self._display_hint('VST Volume', '%s %d%%' % (param_name, round(value / 127.0 * 100)),
+                           fl_hint=config.ENABLE_CONTROLS_FL_HINTS)
         event.handled = False
 
     def _try_native_plugin_knob(self, event, index, value):
