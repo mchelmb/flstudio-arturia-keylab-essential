@@ -79,6 +79,8 @@ except Exception:
 
 PATCH_SETTLE_TIME = getattr(config, 'AUTO_MAP_SETTLE_TIME', 2.5)
 MAX_PARAM_SCAN = 8192
+MAX_PARAMETER_BANKS = 16
+PARAMETERS_PER_BANK = 16
 
 # Params scanned per idle tick during a settle-commit. Scanning (not gating/ranking, which are
 # cheap pure-Python list ops on an already-small result) is the part that makes real FL API calls
@@ -317,18 +319,36 @@ def _load_user_vst_map():
         return {}
 
 
-def _resolve_json_slots(plugin_name, params):
+def get_page_count(plugin_name):
+    """Returns how many curated pages plugin_name has in the user VST map, or 0 if it has no
+    multi-page entry (either no entry at all, or an old-style flat single-page one). Callers use
+    this to decide whether Left/Right should cycle pages for the currently focused plugin."""
+    entry = _load_user_vst_map().get(plugin_name)
+    pages = entry.get('pages') if entry else None
+    return len(pages) if isinstance(pages, list) and pages else 0
+
+
+def _resolve_json_slots(plugin_name, params, page_index=0):
     """Looks up plugin_name in the user VST map and resolves each named slot to its current
     parameter index against this scan's actual results (case-insensitive exact match). Returns
     (knob_prefill, slider_prefill, claimed) - two 8-entry lists (None where unresolved/unspecified)
     and the set of indices they claim, so the normal gate/rank fallback never double-assigns
-    something the user's map already claimed."""
+    something the user's map already claimed.
+
+    Supports two formats: a flat single-page entry ({"knob": [...], "slider": [...]}), or a
+    multi-page one ({"pages": [{"name": ..., "knob": [...], "slider": [...]}, ...]}) - page_index
+    selects which page of the latter to use, clamped to a valid range."""
     entry = _load_user_vst_map().get(plugin_name)
     knob_prefill = [None] * 8
     slider_prefill = [None] * 8
     claimed = set()
     if not entry:
         return knob_prefill, slider_prefill, claimed
+
+    pages = entry.get('pages')
+    if isinstance(pages, list) and pages:
+        page_index = max(0, min(page_index, len(pages) - 1))
+        entry = pages[page_index]
 
     name_to_index = {}
     for idx, name, _value in params:
@@ -380,10 +400,14 @@ class AutoMapper:
         self._pending_key = None
         self._pending_since_ms = None
         self._active_map = {}       # channel_number -> {'knob': [8], 'slider': [8]}
+        self._bank_maps = {}        # channel_number -> 16 maps of 8 knobs and 8 sliders
         self._volume_params = {}    # channel_number -> discovered VST volume parameter index
         self._savedata = SaveData()
         self._mode = None           # lazily loaded - see _get_mode()
         self._scan = None           # in-progress chunked scan state, or None
+        self._active_page = {}      # channel_number -> current page index, multi-page maps
+        self._last_scan_params = {} # channel_number -> params from its most recent full
+                                     # scan, so CyclePage re-commits without a re-scan
 
     def _debug_enabled(self):
         return bool(getattr(config, 'AUTO_MAP_DEBUG', False))
@@ -531,6 +555,7 @@ class AutoMapper:
         debug_on = self._debug_enabled()
 
         export_scan(plugin_name, params)
+        self._last_scan_params[channel_number] = params
 
         gated = gate_candidates(params, log=debug_on)
         ranked = rank_candidates(gated)
@@ -541,7 +566,9 @@ class AutoMapper:
             for i, c in enumerate(ranked[:16]):
                 debug.log('AutoMapper', 'ranked candidates: %d: %s' % (i + 1, c[1]))
 
-        knob_prefill, slider_prefill, claimed = _resolve_json_slots(plugin_name, params)
+        page_index = self._active_page.get(channel_number, 0)
+        knob_prefill, slider_prefill, claimed = _resolve_json_slots(
+            plugin_name, params, page_index)
 
         mode = self._get_mode()
         if mode == 'DYNAMIC_RANKED':
@@ -554,6 +581,8 @@ class AutoMapper:
         # Atomic replace - the whole map is built above before this assignment, never mutated
         # in place, so a knob/slider read mid-calculation can't see a half-built map.
         self._active_map[channel_number] = new_map
+        self._bank_maps[channel_number] = self._build_parameter_banks(
+            ranked, new_map, knob_prefill, slider_prefill, claimed)
         self._volume_params[channel_number] = find_volume_param(params)
 
         if debug_on:
@@ -580,6 +609,28 @@ class AutoMapper:
             if slider_params[i] is None:
                 slider_params[i] = next(leftover, None)
         return {'knob': knob_params, 'slider': slider_params}
+
+    @staticmethod
+    def _build_parameter_banks(ranked, first_map, knob_prefill, slider_prefill, claimed):
+        """Build sixteen banks of eight knobs and eight sliders from the ranked VST pool.
+
+        Bank 0 retains the normal curated/heuristic map. Later banks consume the remaining
+        ranked parameters in groups of sixteen, allowing the LIVE/BANK controls to expose
+        substantially more of a large VST without changing the normal first-bank behavior.
+        """
+        banks = [first_map]
+        reserved = set(claimed)
+        reserved.update(param for param in first_map['knob'] if param is not None)
+        reserved.update(param for param in first_map['slider'] if param is not None)
+        remaining = [candidate[0] for candidate in ranked if candidate[0] not in reserved]
+        for bank_index in range(1, MAX_PARAMETER_BANKS):
+            start = (bank_index - 1) * PARAMETERS_PER_BANK
+            values = remaining[start:start + PARAMETERS_PER_BANK]
+            banks.append({
+                'knob': values[:8] + [None] * (8 - len(values[:8])),
+                'slider': values[8:16] + [None] * (8 - len(values[8:16])),
+            })
+        return banks
 
     @staticmethod
     def _build_fixed_slots_map(discovered_names, ranked, knob_prefill, slider_prefill, claimed):
@@ -609,15 +660,47 @@ class AutoMapper:
 
         return {'knob': knob_params, 'slider': slider_params}
 
-    def GetKnobParam(self, channel_number, index):
-        m = self._active_map.get(channel_number)
+    def GetKnobParam(self, channel_number, index, bank_index=0):
+        banks = self._bank_maps.get(channel_number)
+        m = banks[bank_index % MAX_PARAMETER_BANKS] if banks else self._active_map.get(channel_number)
         return m['knob'][index] if m else None
+
+    def GetPageCount(self, plugin_name):
+        return get_page_count(plugin_name)
+
+    def GetPageName(self, channel_number, plugin_name):
+        """Returns the current page's display name, or None if this plugin has no multi-page
+        map."""
+        entry = _load_user_vst_map().get(plugin_name)
+        pages = entry.get('pages') if entry else None
+        if not (isinstance(pages, list) and pages):
+            return None
+        idx = self._active_page.get(channel_number, 0) % len(pages)
+        return pages[idx].get('name', 'Page %d' % (idx + 1))
+
+    def CyclePage(self, channel_number, plugin_name, delta):
+        """Cycles the curated multi-page map's active page for this channel and immediately
+        re-commits using the cached scan (no full re-scan needed - the plugin hasn't changed,
+        only which curated names we resolve against). Returns False if this plugin has no
+        multi-page map, so callers fall through to their own default Left/Right behavior."""
+        count = get_page_count(plugin_name)
+        if count == 0:
+            return False
+        self._active_page[channel_number] = (
+            self._active_page.get(channel_number, 0) + delta) % count
+        params = self._last_scan_params.get(channel_number)
+        if params is not None:
+            self._commit((channel_number, plugin_name), params)
+        else:
+            self._start_scan((channel_number, plugin_name))
+        return True
 
     def GetVolumeParam(self, channel_number):
         return self._volume_params.get(channel_number)
 
-    def GetSliderParam(self, channel_number, index):
-        m = self._active_map.get(channel_number)
+    def GetSliderParam(self, channel_number, index, bank_index=0):
+        banks = self._bank_maps.get(channel_number)
+        m = banks[bank_index % MAX_PARAMETER_BANKS] if banks else self._active_map.get(channel_number)
         return m['slider'][index] if m else None
 
 

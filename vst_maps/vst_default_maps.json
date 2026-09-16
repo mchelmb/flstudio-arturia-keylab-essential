@@ -1,7 +1,29 @@
 {
-  "_comment": "Per-VST default control maps. Keys are exact plugin names as FL reports them. Each entry may have 'knob' and/or 'slider' arrays of up to 8 parameter names (as they appear in vst_param_scans/<plugin>.json) - unspecified or unmatched slots fall through to the normal auto-mapper. Edit freely; this file is re-read on every patch commit, no script reload needed.",
-  "_example": {
+  "_comment": "Per-VST default control maps. Keys are exact plugin names as FL reports them. Two formats supported: a flat entry ({'knob': [...], 'slider': [...]}), or a multi-page entry ({'pages': [{'name': ..., 'knob': [...], 'slider': [...]}, ...]}) whose pages are cycled with the Left/Right nav buttons while the plugin is focused. Parameter names must match what appears in vst_param_scans/<plugin>.json. Any slot left null/missing falls through to the automatic mapper. Re-read on every patch commit - no script reload needed.",
+
+  "_example_single_page": {
     "knob": ["CUTOFF FREQ", "RESO", null, null, null, null, null, null],
     "slider": ["AMP ATTACK", "AMP DECAY", "AMP SUSTAIN", "AMP RELEASE", null, null, null, null]
+  },
+
+  "_example_multi_page_sampler_TEMPLATE": {
+    "_note": "UNVERIFIED TEMPLATE. FL's Sampler parameter names have not been confirmed against a real scan - load a Sampler, let the auto-mapper run, then open vst_param_scans/Sampler.json and correct these names to match exactly. Rename this key to the exact plugin name FL reports (likely 'Sampler') to activate it.",
+    "pages": [
+      {
+        "name": "Envelope",
+        "knob": ["DELAY", "ATT", "HOLD", "DEC", "SUS", "REL", "TENSION", null],
+        "slider": ["ATT", "DEC", "SUS", "REL", null, null, null, null]
+      },
+      {
+        "name": "LFO / Filter",
+        "knob": ["LFO DELAY", "LFO ATT", "LFO AMT", "LFO SPEED", "MOD X", "MOD Y", null, null],
+        "slider": [null, null, null, null, null, null, null, null]
+      },
+      {
+        "name": "Misc / Time",
+        "knob": ["PAN", "VOL", "MOD X", "MOD Y", "GATE", "SHIFT", "SWING", null],
+        "slider": [null, null, null, null, null, null, null, null]
+      }
+    ]
   }
 }

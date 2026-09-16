@@ -40,6 +40,13 @@ its auto-mapped parameter. The auto-mapper searches for the volume parameter dur
 because its parameter index varies by VST. Long-press PRESET again to disable the override. If a
 VST exposes no recognizable volume parameter, the display reports `VST Volume: Not found`.
 
+### LIVE/BANK parameter banks
+In Channel Plugin mode, the LIVE/BANK controls cycle through 16 parameter banks. Bank 0 keeps
+the curated/native and normal auto-mapper behavior; banks 1-15 use the remaining ranked parameters
+from the VST scan, with eight knob assignments and eight fader assignments per bank. Native
+plugin hard maps intentionally apply only to bank 0. A VST with fewer than 256 usable parameters
+will have empty slots in its later banks.
+
 ### FLEX's Tags/category filter panel is not automatable
 FLEX's internal tag-filter dropdown (opened by clicking "Tags" near its search box) appears to be
 mouse-only — no keyboard shortcut for it has been found in official documentation, community

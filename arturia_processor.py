@@ -616,6 +616,24 @@ class ArturiaMidiProcessor:
             return False
         return self._navigate_window(window, delta)
 
+    def _try_cycle_plugin_page(self, delta):
+        """For a focused plugin with a curated multi-page map (see vst_maps/), Left/Right cycle
+        between its pages - e.g. FL's Sampler maps naturally onto its own tabs. Returns False if
+        the plugin has no multi-page map, so the caller falls through to its default behavior."""
+        try:
+            plugin_name = ui.getFocusedPluginName()
+        except Exception:
+            return False
+        if not plugin_name:
+            return False
+        mapper = arturia_auto_mapper.get_instance()
+        channel_number = channels.channelNumber()
+        if not mapper.CyclePage(channel_number, plugin_name, delta):
+            return False
+        page_name = mapper.GetPageName(channel_number, plugin_name) or ''
+        self._display_hint(plugin_name[:16], page_name[:16])
+        return True
+
     def _focused_window_nav_left(self):
         window = self._get_focused_window()
         if window is None:
@@ -623,11 +641,13 @@ class ArturiaMidiProcessor:
             return False
         debug.log('NavLeft', 'Focused window: %s' % str(window))
         if window == midi.widBrowser:
-            Actions.escape(None)
-            self._display_hint('Browser', 'Back / Escape')
+            ui.navigateBrowserTabs(midi.FPT_Left)
+            self._display_hint('Browser Tab', 'Previous')
         elif window in (midi.widMixer, midi.widChannelRack, midi.widPlaylist, midi.widPianoRoll):
             transport.globalTransport(midi.FPT_Jog, -1)
             self._display_hint('Navigate', 'Left')
+        elif window == midi.widPlugin and self._try_cycle_plugin_page(-1):
+            pass
         else:
             debug.log('NavLeft', 'Unhandled window type')
             return False
@@ -646,6 +666,8 @@ class ArturiaMidiProcessor:
         elif window in (midi.widMixer, midi.widChannelRack, midi.widPlaylist, midi.widPianoRoll):
             transport.globalTransport(midi.FPT_Jog, 1)
             self._display_hint('Navigate', 'Right')
+        elif window == midi.widPlugin and self._try_cycle_plugin_page(1):
+            pass
         else:
             debug.log('NavRight', 'Unhandled window type')
             return False
@@ -1046,8 +1068,13 @@ class ArturiaMidiProcessor:
                 ui.next()
                 debug.log('OnCategory', 'pykeys unavailable - used ui.next() fallback')
             self._display_hint('Plugin Browser', 'Tags (Right)')
+        elif window == midi.widBrowser:
+            # Back out of a just-opened browser popup/submenu without proceeding deeper.
+            # Left stays dedicated to browser tab navigation.
+            Actions.escape(None)
+            self._display_hint('Browser', 'Back / Escape')
         else:
-            debug.log('OnCategory', 'Not plugin window: %s' % str(window))
+            debug.log('OnCategory', 'Not plugin/browser window: %s' % str(window))
 
     def OnCategoryLongPress(self, event):
         new_mode = arturia_auto_mapper.get_instance().ToggleMode()

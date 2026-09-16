@@ -193,7 +193,8 @@ class ArturiaInputControls:
                            fl_hint=config.ENABLE_CONTROLS_FL_HINTS)
 
     def _display_plugin_update_hint(self):
-        self._display_hint('Setting MIDI Ch', 'To: %2d' % (self._current_index_plugin + 1),
+        self._display_hint('Parameter Bank', '%2d / %2d' % (self._current_index_plugin + 1,
+                                                             ArturiaInputControls.MAX_NUM_PAGES),
                            fl_hint=config.ENABLE_CONTROLS_FL_HINTS)
 
     def ProcessKnobInput(self, event, knob_index, delta):
@@ -306,7 +307,7 @@ class ArturiaInputControls:
         """Attempt to drive a recognized native FL plugin's parameter directly
         from a fader/slider (index 0-8), bypassing MIDI CC forwarding.
         Returns True if handled."""
-        if SCRIPT_VERSION < 8:
+        if SCRIPT_VERSION < 8 or self._current_index_plugin != 0:
             return False
         if not ui.getFocused(WID_PLUGIN):
             return False
@@ -317,7 +318,7 @@ class ArturiaInputControls:
         if param_index is None:
             self._maybe_dump_unmapped_plugin(plugin_name)
             param_index = arturia_auto_mapper.get_instance().GetSliderParam(
-                channels.channelNumber(), index)
+                channels.channelNumber(), index, self._current_index_plugin)
         if param_index is None or param_index < 0:
             return False
 
@@ -375,7 +376,7 @@ class ArturiaInputControls:
         param_name = plugins.getParamName(param_index, channel)
         self._display_hint('VST Volume', '%s %d%%' % (param_name, round(value / 127.0 * 100)),
                            fl_hint=config.ENABLE_CONTROLS_FL_HINTS)
-        event.handled = False
+        event.handled = True
 
     def _try_native_plugin_knob(self, event, index, value):
         """Attempt to drive a recognized native FL plugin's parameter directly
@@ -386,7 +387,7 @@ class ArturiaInputControls:
         matching Image-Line's own KeyLab Essential table (the 9th/nav knob
         isn't covered there either). Returns True if handled.
         """
-        if SCRIPT_VERSION < 8 or index > 7:
+        if SCRIPT_VERSION < 8 or index > 7 or self._current_index_plugin != 0:
             return False
         if not ui.getFocused(WID_PLUGIN):
             return False
@@ -397,7 +398,7 @@ class ArturiaInputControls:
         if param_index is None:
             self._maybe_dump_unmapped_plugin(plugin_name)
             param_index = arturia_auto_mapper.get_instance().GetKnobParam(
-                channels.channelNumber(), index)
+                channels.channelNumber(), index, self._current_index_plugin)
         if param_index is None or param_index < 0:
             return False
 

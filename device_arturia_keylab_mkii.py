@@ -7,7 +7,12 @@ from arturia_processor import ArturiaMidiProcessor
 
 import arturia_midi
 import config
+import stub_guard
 import ui
+
+
+# Fail loudly if fake FL Studio modules are shadowing the real built-ins (see stub_guard.py).
+stub_guard.check_for_stubs()
 
 
 WELCOME_DISPLAY_INTERVAL_MS = 1500

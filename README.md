@@ -160,6 +160,11 @@ Encoder 8 is hard-mapped to the volume parameter discovered in that VST's own ex
 list; long-press again to disable it. Because parameter indices and names vary by VST, the
 auto-mapper searches for the volume parameter during its scan.
 
+In Channel Plugin mode, the LIVE/BANK controls cycle through 16 parameter banks. Bank 0 uses the
+curated/native mapping and the normal auto-mapper; banks 1-15 expose the remaining ranked VST
+parameters as eight knobs plus eight faders per bank. Native-plugin hard maps apply to bank 0;
+the additional banks are populated from the VST's scanned parameter list.
+
 ---
 
 ## Feedback & Contributing
