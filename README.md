@@ -62,9 +62,11 @@ This fork adds, on top of everything in rjuang's original:
   fixed behavior for all of them.
 - **FLEX-aware browsing** — encoder scroll and Enter drive FLEX's own preset list correctly
   (works best with FLEX's "flatten all packs" display mode).
-- **A dedicated master/VST-volume control scheme** — encoder 9 always controls the current
-  channel's own volume (distinct from any plugin's internal parameters); fader 9 always controls
-  the mixer master, in every mode, never forwarded to a plugin as a generic CC.
+- **A dedicated mixer-master control** — fader 9 controls the mixer master and is never forwarded
+  to a plugin as a generic CC. On the original KeyLab Essential 61, Encoder 9 is physically
+  present but does not transmit in DAW Mode because of a firmware limitation; no reliable
+  User-mode/DAW-mode workaround is available. Per-VST/plugin volume control is planned as an
+  Encoder 8 override for the next release.
 - **A heuristic auto-mapper** for plugins with no hand-curated entry in `arturia_native_plugins.py`
   — scans a newly-selected plugin's exposed parameters, filters out inactive/structural ones,
   ranks the rest by a synthesis-performance priority hierarchy, and maps the results onto the
@@ -145,6 +147,15 @@ setting does and which are safe to change without understanding the code.
 
 Read before reporting a bug — it might already be a known, open issue:
 [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md).
+
+### Original KeyLab Essential 61: Encoder 9 is unavailable in DAW Mode
+
+The original, pre-MK3 KeyLab Essential 61 firmware does not emit a DAW-mode message for Encoder
+9. User Mode can expose ordinary MIDI assignments, but switching between DAW Mode and User Mode
+does not provide a reliable way to preserve the navigation controls and recover Encoder 9 at the
+same time. The workaround is therefore considered infeasible and Encoder 9 support is disabled.
+
+Per-VST/plugin volume control is planned for the next release as a dedicated Encoder 8 override.
 
 ---
 

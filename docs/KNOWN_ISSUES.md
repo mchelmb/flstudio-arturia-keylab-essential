@@ -26,6 +26,16 @@ this project. If it stops, that's a concrete before/after to build a fix from.
 
 ## Known limitations (working as intended, not bugs)
 
+### Original KeyLab Essential 61: Encoder 9 is unavailable in DAW Mode
+The original, pre-MK3 KeyLab Essential 61 firmware does not emit a DAW-mode message for Encoder
+9. The control can be assigned in User Mode as an ordinary MIDI control, but the DAW/User split
+means the navigation encoder and side controls cannot be retained reliably at the same time.
+The combined User-mode/DAW-mode workaround is therefore a dead end for this hardware, and the
+project intentionally leaves Encoder 9 disabled.
+
+Per-VST/plugin volume control is not implemented through Encoder 9. A dedicated Encoder 8
+override is planned for the next release.
+
 ### FLEX's Tags/category filter panel is not automatable
 FLEX's internal tag-filter dropdown (opened by clicking "Tags" near its search box) appears to be
 mouse-only — no keyboard shortcut for it has been found in official documentation, community
