@@ -1,0 +1,28 @@
+# Generated archives and compressed artifacts
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
+*.bz2
+*.xz
+
+# Local development environment and duplicate source snapshot
+.venv/
+codebase/
+
+# FL Studio built-in modules; local stubs must not be uploaded or deployed
+/arrangement.py
+/channels.py
+/device.py
+/general.py
+/launchMapPages.py
+/midi.py
+/mixer.py
+/patterns.py
+/playlist.py
+/plugins.py
+/screen.py
+/transport.py
+/ui.py
+/utils.py
