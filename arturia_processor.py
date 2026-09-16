@@ -1187,7 +1187,7 @@ class ArturiaMidiProcessor:
 
     def OnBankNextLongPress(self, event):
         debug.log('OnBankNext (long)', 'Dispatched', event=event)
-        self.OnLivePart1(event)
+        self._controller.encoders().ToggleKnobMode()
 
     def OnBankPrev(self, event):
         self._detect_long_press(event, self.OnBankPrevShortPress, self.OnBankPrevLongPress)
@@ -1198,15 +1198,15 @@ class ArturiaMidiProcessor:
 
     def OnBankPrevLongPress(self, event):
         debug.log('OnBankPrev (long)', 'Dispatched', event=event)
-        self.OnLivePart2(event)
+        self._controller.encoders().ToggleCurrentMode()
 
     def OnLivePart1(self, event):
-        debug.log('OnLivePart1', 'Dispatched', event=event)
-        self._controller.encoders().ToggleKnobMode()
+        debug.log('OnLivePart1', 'Cycle parameter bank forward', event=event)
+        self._controller.encoders().NextControlsPage()
 
     def OnLivePart2(self, event):
-        debug.log('OnLivePart2', 'Dispatched', event=event)
-        self._controller.encoders().ToggleCurrentMode()
+        debug.log('OnLivePart2', 'Cycle parameter bank backward', event=event)
+        self._controller.encoders().PrevControlsPage()
 
     def OnBankSelect(self, event):
         bank_index = event.controlNum - 24

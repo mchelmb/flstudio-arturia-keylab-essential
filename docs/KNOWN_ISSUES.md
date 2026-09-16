@@ -45,7 +45,8 @@ In Channel Plugin mode, the LIVE/BANK controls cycle through 16 parameter banks.
 the curated/native and normal auto-mapper behavior; banks 1-15 use the remaining ranked parameters
 from the VST scan, with eight knob assignments and eight fader assignments per bank. Native
 plugin hard maps intentionally apply only to bank 0. A VST with fewer than 256 usable parameters
-will have empty slots in its later banks.
+will have empty slots in its later banks. The LIVE/BANK controls are momentary triggers in DAW
+mode, not persistent mode toggles; their LEDs are intentionally cleared after the trigger.
 
 ### FLEX's Tags/category filter panel is not automatable
 FLEX's internal tag-filter dropdown (opened by clicking "Tags" near its search box) appears to be

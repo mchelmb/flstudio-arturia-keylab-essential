@@ -501,6 +501,8 @@ class ArturiaInputControls:
         self._lights.SetLights({
             ArturiaLights.ID_BANK_NEXT: ArturiaLights.AsOnOffByte(is_knobs_panning),
             ArturiaLights.ID_BANK_PREVIOUS: ArturiaLights.AsOnOffByte(is_mixer_mode),
+            # LIVE/BANK is a momentary trigger in DAW mode, not a latched mode indicator.
+            ArturiaLights.ID_BANK_TOGGLE: ArturiaLights.LED_OFF,
         })
 
         channel_idx = channels.selectedChannel()
