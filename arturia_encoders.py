@@ -327,14 +327,8 @@ class ArturiaInputControls:
 
     def _process_plugin_knob_event(self, event, index, delta):
         if index == 8:
-            # Encoder 9 handling removed: original KeyLab Essential 61 firmware does not emit
-            # DAW-mode messages for encoder 9. Relying on this knob in DAW Mode is
-            # unreliable for the original Essential 61, so runtime handling was removed.
-            # In User Mode encoder 9 remains assignable via MIDI Control Center; DAW Mode
-            # will not generate a usable message for this knob on the original hardware.
-            # No action is taken here to avoid unintended behavior.
-            # Optionally, display a short hint once to inform the user (disabled by default).
-            # self._display_hint('Enc9 Disabled', 'DAW firmware', fl_hint=config.ENABLE_CONTROLS_FL_HINTS)
+            # Encoder 9 is silent in DAW Mode on the original KeyLab Essential 61.
+            # The attempted User-mode/CC85 workaround is not reliable and remains disabled.
             event.handled = True
             return
 
