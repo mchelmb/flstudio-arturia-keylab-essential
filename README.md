@@ -164,8 +164,9 @@ In Channel Plugin mode, the LIVE/BANK controls cycle through 16 parameter banks.
 curated/native mapping and the normal auto-mapper; banks 1-15 expose the remaining ranked VST
 parameters as eight knobs plus eight faders per bank. Native-plugin hard maps apply to bank 0;
 the additional banks are populated from the VST's scanned parameter list.
-The LIVE/BANK controls are treated as momentary triggers in DAW mode; their LEDs are not used as
-latched mode indicators.
+On the original Essential, the single LIVE/BANK button is a momentary trigger in DAW mode and
+advances the bank counter. Its LED is not used as a latched mode indicator. The MKII retains
+separate forward/backward Live Part controls.
 
 ---
 

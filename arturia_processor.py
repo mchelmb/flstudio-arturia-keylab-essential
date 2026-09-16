@@ -142,11 +142,15 @@ class ArturiaMidiProcessor:
             .SetHandler(49, self.OnBankNext)
             .SetHandler(48, self.OnBankPrev)
             .SetHandler(47, self.OnLivePart1, ignore_release)
-            .SetHandler(46, self.OnLivePart2, ignore_release)
 
             .SetHandlerForKeys(range(24, 32), self.OnBankSelect, ignore_release)
             .SetHandlerForKeys(range(104, 112), self.OnStartOrEndSliderEvent)
         )
+        # The MKII has separate Live Part 1/2 controls. The original Essential has one
+        # combined LIVE/BANK button, represented by control 47; control 46 must not create a
+        # second bank trigger on that hardware.
+        if not arturia_leds.ESSENTIAL_KEYBOARD:
+            self._midi_command_dispatcher.SetHandler(46, self.OnLivePart2, ignore_release)
         # Targets for the long-press window selector.  FL Studio's window IDs let us
         # focus the actual FL window rather than emulating mouse/keyboard shortcuts.
         self._window_targets = (
