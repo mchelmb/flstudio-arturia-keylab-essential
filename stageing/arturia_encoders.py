@@ -147,9 +147,6 @@ class ArturiaInputControls:
         self._current_index_mixer = 0
         self._current_index_plugin = 0
 
-        # So _commit can announce "Saved Map" / "No Saved Map" on the LCD when a plugin loads.
-        arturia_auto_mapper.get_instance().set_display_hint_fn(self._display_hint)
-
     def ToggleCurrentMode(self):
         self._current_mode = (self._current_mode + 1) % len(ArturiaInputControls.MODE_NAMES)
         self._display_hint('Controlling', ArturiaInputControls.MODE_NAMES[self._current_mode],
@@ -177,10 +174,6 @@ class ArturiaInputControls:
             self._display_plugin_update_hint()
         self._update_lights()
         self._reset_sliders_pickup_status()
-
-    def IsPluginMode(self):
-        """Return whether the hardware controls are currently assigned to VST parameters."""
-        return self._current_mode == ArturiaInputControls.INPUT_MODE_CHANNEL_PLUGINS
 
     def PrevControlsPage(self):
         if self._current_mode == ArturiaInputControls.INPUT_MODE_MIXER_OVERVIEW:
@@ -345,13 +338,13 @@ class ArturiaInputControls:
             # failures (nothing gets logged if it throws or returns something unexpected).
             plugin_name = ui.getFocusedPluginName()
         except Exception as e:
-            log('AutoMapper', 'getFocusedPluginName() raised %s' % repr(e))
+            debug.log('AutoMapper', 'getFocusedPluginName() raised %s' % repr(e))
             return
         if not plugin_name:
-            log('AutoMapper', 'No focused plugin name (channel %d)' % channel_number)
+            debug.log('AutoMapper', 'No focused plugin name (channel %d)' % channel_number)
             return
         if plugin_name in config.AUTO_MAP_EXCLUDED_PLUGINS:
-            log('AutoMapper', '%s is in AUTO_MAP_EXCLUDED_PLUGINS - skipped' % plugin_name)
+            debug.log('AutoMapper', '%s is in AUTO_MAP_EXCLUDED_PLUGINS - skipped' % plugin_name)
             return
         mapper = arturia_auto_mapper.get_instance()
         mapper.NotifyChannelPlugin(channel_number, plugin_name, now_ms)
@@ -361,25 +354,18 @@ class ArturiaInputControls:
         """Attempt to drive a recognized native FL plugin's parameter directly
         from a fader/slider (index 0-8), bypassing MIDI CC forwarding.
         Returns True if handled."""
-        if SCRIPT_VERSION < 8:
+        if SCRIPT_VERSION < 8 or self._current_index_plugin != 0:
             return False
         if not ui.getFocused(WID_PLUGIN):
             return False
 
         plugin_name = ui.getFocusedPluginName()
         control_key = str(224 + index)
-        # Hand-curated maps describe the first bank only. Later banks are supplied by the
-        # auto-mapper and must still be applied directly to the VST rather than forwarded as a
-        # raw CC, otherwise Part/Bank paging appears to work but controls the wrong thing.
-        param_index = None
-        if self._current_index_plugin == 0:
-            param_index = arturia_native_plugins.get_param_index(plugin_name, control_key)
+        param_index = arturia_native_plugins.get_param_index(plugin_name, control_key)
         if param_index is None:
             self._maybe_dump_unmapped_plugin(plugin_name)
             param_index = arturia_auto_mapper.get_instance().GetSliderParam(
                 channels.channelNumber(), index, self._current_index_plugin)
-        log('NativeSlider', 'bank=%d idx=%d plugin=%s -> param=%s' % (
-            self._current_index_plugin, index, plugin_name, param_index))
         if param_index is None or param_index < 0:
             return False
 
@@ -448,24 +434,18 @@ class ArturiaInputControls:
         matching Image-Line's own KeyLab Essential table (the 9th/nav knob
         isn't covered there either). Returns True if handled.
         """
-        if SCRIPT_VERSION < 8 or index > 7:
+        if SCRIPT_VERSION < 8 or index > 7 or self._current_index_plugin != 0:
             return False
         if not ui.getFocused(WID_PLUGIN):
             return False
 
         plugin_name = ui.getFocusedPluginName()
         control_key = str(16 + index)
-        # Curated native maps are the first bank. Banks selected with Part/Next/Prev come from
-        # the auto-mapper and should be driven by parameter index as well.
-        param_index = None
-        if self._current_index_plugin == 0:
-            param_index = arturia_native_plugins.get_param_index(plugin_name, control_key)
+        param_index = arturia_native_plugins.get_param_index(plugin_name, control_key)
         if param_index is None:
             self._maybe_dump_unmapped_plugin(plugin_name)
             param_index = arturia_auto_mapper.get_instance().GetKnobParam(
                 channels.channelNumber(), index, self._current_index_plugin)
-        log('NativeKnob', 'bank=%d idx=%d plugin=%s -> param=%s' % (
-            self._current_index_plugin, index, plugin_name, param_index))
         if param_index is None or param_index < 0:
             return False
 

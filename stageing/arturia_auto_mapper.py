@@ -39,12 +39,6 @@ from arturia_savedata import SaveData
 
 MODE_FIXED_SLOTS = 'FIXED_SLOTS'
 MODE_DYNAMIC_RANKED = 'DYNAMIC_RANKED'
-# Strict JSON-only mode: uses ONLY what vst_default_maps.json specifies for the focused plugin,
-# with no ranked/heuristic fallback filling the remaining slots. Fixed and Dynamic both already
-# consult the JSON file as a priority overlay (see _resolve_json_slots below) - this third mode
-# is for when you want to know, unambiguously, that every knob/slider is exactly what you wrote
-# in the JSON and nothing else, e.g. while curating a new entry.
-MODE_SAVED_ONLY = 'SAVED_ONLY'
 
 # --------------------[ User-editable per-VST default maps ]-----------------------------------
 # A third priority layer, between arturia_native_plugins.py (hand-curated Python, highest
@@ -71,9 +65,8 @@ SCAN_EXPORT_DIR = os.path.join(_SCRIPT_DIR, 'vst_param_scans')
 # Commit() so a write here never clobbers unrelated keys.
 _SAVEDATA_KEY = 'auto_map_mode'
 _ENCODER8_VOLUME_KEY = 'encoder8_volume_override'
-_MODE_TO_INT = {MODE_FIXED_SLOTS: 0, MODE_DYNAMIC_RANKED: 1, MODE_SAVED_ONLY: 2}
+_MODE_TO_INT = {MODE_FIXED_SLOTS: 0, MODE_DYNAMIC_RANKED: 1}
 _INT_TO_MODE = {value: key for key, value in _MODE_TO_INT.items()}
-_MODE_CYCLE = (MODE_FIXED_SLOTS, MODE_DYNAMIC_RANKED, MODE_SAVED_ONLY)
 
 SCRIPT_VERSION = None
 try:
@@ -421,14 +414,6 @@ class AutoMapper:
         self._active_page = {}      # channel_number -> current page index, multi-page maps
         self._last_scan_params = {} # channel_number -> params from its most recent full
                                      # scan, so CyclePage re-commits without a re-scan
-        self._display_hint_fn = None  # optional callable(title, value) - see set_display_hint_fn
-
-    def set_display_hint_fn(self, fn):
-        """Wire an LCD hint callback (e.g. ArturiaInputControls._display_hint) so _commit can
-        announce, on plugin load, whether a saved JSON map was found and used for it. Called
-        once from arturia_encoders.py at construction time; safe to leave unset (hints are just
-        skipped, nothing else depends on this)."""
-        self._display_hint_fn = fn
 
     def _debug_enabled(self):
         return bool(getattr(config, 'AUTO_MAP_DEBUG', False))
@@ -449,13 +434,12 @@ class AutoMapper:
         return self._mode
 
     def ToggleMode(self):
-        """Cycles FIXED_SLOTS -> DYNAMIC_RANKED -> SAVED_ONLY -> FIXED_SLOTS, persists the
-        choice into the project, and immediately re-commits the currently selected channel/
-        plugin under the new mode rather than waiting for the settle timer - this is a
-        deliberate one-off action (a long CATEGORY press), not rapid preset browsing, so instant
-        feedback is the right call here. Returns the new mode string for an LCD confirmation."""
-        current = self._get_mode()
-        new_mode = _MODE_CYCLE[(_MODE_CYCLE.index(current) + 1) % len(_MODE_CYCLE)]
+        """Flips FIXED_SLOTS<->DYNAMIC_RANKED, persists the choice into the project, and
+        immediately re-commits the currently selected channel/plugin under the new mode rather
+        than waiting for the settle timer - this is a deliberate one-off action (a long CATEGORY
+        press), not rapid preset browsing, so instant feedback is the right call here. Returns the
+        new mode string for an LCD confirmation."""
+        new_mode = MODE_DYNAMIC_RANKED if self._get_mode() == MODE_FIXED_SLOTS else MODE_FIXED_SLOTS
         self._mode = new_mode
         try:
             self._savedata.Load()  # merge with whatever else already uses this shared mechanism
@@ -611,23 +595,12 @@ class AutoMapper:
             plugin_name, params, page_index)
 
         mode = self._get_mode()
-        if mode == MODE_SAVED_ONLY:
-            new_map = self._build_saved_only_map(knob_prefill, slider_prefill)
-        elif mode == MODE_DYNAMIC_RANKED:
+        if mode == 'DYNAMIC_RANKED':
             new_map = self._build_dynamic_map(ranked, knob_prefill, slider_prefill, claimed)
         else:
             discovered_names = [(idx, name) for idx, name, _value, _dep in gated]
             new_map = self._build_fixed_slots_map(discovered_names, ranked,
                                                    knob_prefill, slider_prefill, claimed)
-
-        if self._display_hint_fn:
-            try:
-                if claimed:
-                    self._display_hint_fn('Saved Map', plugin_name[:16])
-                elif mode == MODE_SAVED_ONLY:
-                    self._display_hint_fn('No Saved Map', plugin_name[:16])
-            except Exception:
-                pass
 
         # Atomic replace - the whole map is built above before this assignment, never mutated
         # in place, so a knob/slider read mid-calculation can't see a half-built map.
@@ -645,14 +618,6 @@ class AutoMapper:
                 if param_index is not None:
                     debug.log('AutoMapper', '%s %d -> %s' % (
                         label, i + 1, names_by_index.get(param_index, '?')))
-
-    @staticmethod
-    def _build_saved_only_map(knob_prefill, slider_prefill):
-        """AUTO_MAP_MODE == 'SAVED_ONLY': exactly what the JSON map resolved, nothing else.
-        Slots the JSON didn't cover for this plugin/page stay None (unmapped) rather than
-        falling through to the ranked/heuristic pool - the point of this mode is knowing with
-        certainty that every control is exactly what's written in vst_default_maps.json."""
-        return {'knob': list(knob_prefill), 'slider': list(slider_prefill)}
 
     @staticmethod
     def _build_dynamic_map(ranked, knob_prefill, slider_prefill, claimed):
@@ -721,15 +686,7 @@ class AutoMapper:
 
     def GetKnobParam(self, channel_number, index, bank_index=0):
         banks = self._bank_maps.get(channel_number)
-        # Only bank 0 has a safe legacy fallback. A requested later bank must remain unmapped
-        # until the scan has committed its bank table; falling back to the first bank would make
-        # Part/Next/Prev appear to work while still changing the old parameter.
-        if banks:
-            m = banks[bank_index % MAX_PARAMETER_BANKS]
-        elif bank_index == 0:
-            m = self._active_map.get(channel_number)
-        else:
-            m = None
+        m = banks[bank_index % MAX_PARAMETER_BANKS] if banks else self._active_map.get(channel_number)
         return m['knob'][index] if m else None
 
     def GetPageCount(self, plugin_name):
@@ -767,12 +724,7 @@ class AutoMapper:
 
     def GetSliderParam(self, channel_number, index, bank_index=0):
         banks = self._bank_maps.get(channel_number)
-        if banks:
-            m = banks[bank_index % MAX_PARAMETER_BANKS]
-        elif bank_index == 0:
-            m = self._active_map.get(channel_number)
-        else:
-            m = None
+        m = banks[bank_index % MAX_PARAMETER_BANKS] if banks else self._active_map.get(channel_number)
         return m['slider'][index] if m else None
 
 

@@ -56,14 +56,6 @@ FOCUS_POLL_INTERVAL_MS = 150
 # so CATEGORY maps to Right arrow to match that UX.
 PLUGIN_CATEGORY_KEY = 'right'
 
-# Keystroke sent to FL's Browser panel to collapse/step up one level in the tree, for CATEGORY
-# in Browser context. FL's scripting API has no dedicated "go up a level" browser call - only
-# item-to-item movement (ui.navigateBrowser) and tab switching (ui.navigateBrowserTabs) - so
-# this emulates the real keyboard shortcut, same technique as PLUGIN_CATEGORY_KEY above.
-# NOTE: unverified against real hardware/FL - confirm this is actually FL's Browser "back/up a
-# level" shortcut on your system before relying on it; adjust the key name if it isn't.
-BROWSER_UP_LEVEL_KEY = 'backspace'
-
 # Deliberately longer than the usual 450ms long-press threshold - toggling the auto-mapper mode
 # changes a setting, not a navigation action, so it shouldn't be easy to trigger by accident.
 AUTO_MAPPER_MODE_TOGGLE_LONG_PRESS_MS = 2000
@@ -516,15 +508,7 @@ class ArturiaMidiProcessor:
                     break
             except Exception:
                 pass
-        previous = self._focused_window
         self._focused_window = found
-        if previous is not None and previous != found:
-            # Modifier/macro state is meaningful only within the window where it was pressed.
-            # Do not let a channel-rack modifier survive into Playlist/Pattern/Plugin focus.
-            self._button_mode = 0
-            self._locked_mode = 0
-            self._button_hold_action_committed = False
-            debug.log('Focus', 'Cleared transient controls: %s -> %s' % (str(previous), str(found)))
         return found
 
     def _exit_window_modes(self, reason):
@@ -1089,24 +1073,16 @@ class ArturiaMidiProcessor:
                 debug.log('OnCategory', 'pykeys unavailable - used ui.next() fallback')
             self._display_hint('Plugin Browser', 'Tags (Right)')
         elif window == midi.widBrowser:
-            # Go up one level in the browser tree (per the intended design: Cat/Char = "leave
-            # current browser depth"). This was previously Actions.escape(None), which closes/
-            # dismisses the browser rather than stepping up a level - a different action.
-            if not Actions.fl_windows_shortcut(BROWSER_UP_LEVEL_KEY):
-                Actions.escape(None)
-                debug.log('OnCategory', 'pykeys unavailable - used Escape fallback')
-            self._display_hint('Browser', 'Up a Level')
+            # Back out of a just-opened browser popup/submenu without proceeding deeper.
+            # Left stays dedicated to browser tab navigation.
+            Actions.escape(None)
+            self._display_hint('Browser', 'Back / Escape')
         else:
             debug.log('OnCategory', 'Not plugin/browser window: %s' % str(window))
 
     def OnCategoryLongPress(self, event):
         new_mode = arturia_auto_mapper.get_instance().ToggleMode()
-        labels = {
-            arturia_auto_mapper.MODE_FIXED_SLOTS: 'Fixed Slots',
-            arturia_auto_mapper.MODE_DYNAMIC_RANKED: 'Dynamic Ranked',
-            arturia_auto_mapper.MODE_SAVED_ONLY: 'Saved Only',
-        }
-        label = labels.get(new_mode, new_mode)
+        label = 'Fixed Slots' if new_mode == arturia_auto_mapper.MODE_FIXED_SLOTS else 'Dynamic Ranked'
         self._display_hint('Auto-Map Mode', label)
         debug.log('OnCategoryLongPress', 'Toggled auto-map mode to %s' % new_mode)
 
@@ -1178,17 +1154,6 @@ class ArturiaMidiProcessor:
             self._button_hold_action_committed = True
             return
 
-        # Channel Rack: bring the selected channel's plugin editor to front, or hide it if
-        # already showing. Previously this fell through to OnNavigationKnobPressed, which
-        # routes through the legacy cyclic NavigationMode system (Channel/Volume/Panning/.../
-        # Playlist Track/...) - whatever mode that system happened to be sitting in (e.g.
-        # "Playlist Track") would fire instead, which is what made the jog press appear to
-        # randomly hide Channel Rack and jump to the Playlist.
-        if self._get_focused_window() == midi.widChannelRack:
-            self.OnChannelKnobPress()
-            self._button_hold_action_committed = True
-            return
-
         self.OnNavigationKnobPressed(event)
 
     def OnNavigationKnobLongPress(self, event):
@@ -1222,14 +1187,6 @@ class ArturiaMidiProcessor:
 
     def OnBankNextShortPress(self, event):
         debug.log('OnBankNext (short)', 'Dispatched', event=event)
-        if self._controller.encoders().IsPluginMode():
-            # Live poll, not the throttled/cached _get_focused_window(): this only runs on a
-            # discrete button press, so the cost is negligible, and a stale cache here was the
-            # actual cause of paging working once then silently going inert (the cache can miss
-            # a floating/undocked third-party plugin editor between its throttled refreshes).
-            if not ui.getFocused(midi.widPlugin):
-                debug.log('OnBankNext', 'Ignored: plugin bank is not active')
-                return
         self._controller.encoders().NextControlsPage()
 
     def OnBankNextLongPress(self, event):
@@ -1241,10 +1198,6 @@ class ArturiaMidiProcessor:
 
     def OnBankPrevShortPress(self, event):
         debug.log('OnBankPrev (short)', 'Dispatched', event=event)
-        if self._controller.encoders().IsPluginMode():
-            if not ui.getFocused(midi.widPlugin):
-                debug.log('OnBankPrev', 'Ignored: plugin bank is not active')
-                return
         self._controller.encoders().PrevControlsPage()
 
     def OnBankPrevLongPress(self, event):
@@ -1253,17 +1206,11 @@ class ArturiaMidiProcessor:
 
     def OnLivePart1(self, event):
         debug.log('OnLivePart1', 'Cycle parameter bank forward', event=event)
-        if not self._is_pressed(event):
-            return
-        if ui.getFocused(midi.widPlugin) and self._controller.encoders().IsPluginMode():
-            self._controller.encoders().NextControlsPage()
+        self._controller.encoders().NextControlsPage()
 
     def OnLivePart2(self, event):
         debug.log('OnLivePart2', 'Cycle parameter bank backward', event=event)
-        if not self._is_pressed(event):
-            return
-        if ui.getFocused(midi.widPlugin) and self._controller.encoders().IsPluginMode():
-            self._controller.encoders().PrevControlsPage()
+        self._controller.encoders().PrevControlsPage()
 
     def OnBankSelect(self, event):
         bank_index = event.controlNum - 24
