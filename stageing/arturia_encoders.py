@@ -360,6 +360,7 @@ class ArturiaInputControls:
             return False
 
         plugin_name = ui.getFocusedPluginName()
+        debug.log('NativePlugin', 'Slider %d: plugin_name="%s" control_key=%s' % (index, plugin_name, str(224 + index)))
         control_key = str(224 + index)
         param_index = arturia_native_plugins.get_param_index(plugin_name, control_key)
         if param_index is None:
@@ -440,6 +441,7 @@ class ArturiaInputControls:
             return False
 
         plugin_name = ui.getFocusedPluginName()
+        debug.log('NativePlugin', 'Knob %d: plugin_name="%s" control_key=%s' % (index, plugin_name, str(16 + index)))
         control_key = str(16 + index)
         param_index = arturia_native_plugins.get_param_index(plugin_name, control_key)
         if param_index is None:

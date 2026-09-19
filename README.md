@@ -94,7 +94,7 @@ Full technical changelog: [CHANGELOG.md](CHANGELOG.md).
 
 | | This fork |
 |---|---|
-| **Hardware tested on** | Arturia KeyLab Essential 61 mk2 |
+| **Hardware tested on** | Arturia KeyLab Essential 61 (not mk3) |
 | **Hardware likely compatible, untested** | Arturia KeyLab mkII (same underlying script family) |
 | **FL Studio tested on** | 2026 (build 26.1.6) |
 | **OS tested on** | Windows |
