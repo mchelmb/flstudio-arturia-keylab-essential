@@ -1,0 +1,21 @@
+{
+    "venvPath": ".",
+    "venv": ".venv",
+    "extraPaths": [
+        ".venv/Lib/site-packages"
+    ],
+    "pythonVersion": "3.12",
+    "include": [
+        "*.py"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/.*",
+        ".venv",
+        ".kilo",
+        "stageing",
+        "ai-conversations",
+        "__pycache__"
+    ],
+    "typeCheckingMode": "basic"
+}

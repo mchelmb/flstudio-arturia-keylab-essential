@@ -65,8 +65,8 @@ This fork adds, on top of everything in rjuang's original:
 - **A dedicated mixer-master control** — fader 9 controls the mixer master and is never forwarded
   to a plugin as a generic CC. On the original KeyLab Essential 61, Encoder 9 is physically
   present but does not transmit in DAW Mode because of a firmware limitation; no reliable
-  User-mode/DAW-mode workaround is available. Per-VST/plugin volume control is planned as an
-  Encoder 8 override for the next release.
+  User-mode/DAW-mode workaround is not available. A project-persisted PRESET long press toggles an
+  Encoder 8 override that uses the active VST's discovered volume parameter.
 - **A heuristic auto-mapper** for plugins with no hand-curated entry in `arturia_native_plugins.py`
   — scans a newly-selected plugin's exposed parameters, filters out inactive/structural ones,
   ranks the rest by a synthesis-performance priority hierarchy, and maps the results onto the
@@ -75,8 +75,9 @@ This fork adds, on top of everything in rjuang's original:
   the heuristic fallback — every scan is also auto-exported to `vst_param_scans/` as raw material
   for building these. Runs on a debounced settle timer so it doesn't remap mid-scroll while
   browsing presets, and scans in small chunks across multiple idle ticks so a large plugin can't
-  block controller responsiveness. Two fallback modes (fixed hardware-label slots, or fully
-  dynamic ranking), toggleable live with a long CATEGORY press, persisted per-project. See
+  block controller responsiveness. Three modes (fixed hardware-label slots, fully dynamic
+  ranking, or saved-map-only), toggleable live with a long CATEGORY press and persisted
+  per-project. See
   [docs/AUTO_MAPPER.md](docs/AUTO_MAPPER.md).
 - **A GUI-coherence watchdog** — FL Studio's scripting engine has no true threading and no direct
   way to detect a GUI stall; this fork infers one from irregular idle-tick spacing and resynchronizes
@@ -92,8 +93,8 @@ Full technical changelog: [CHANGELOG.md](CHANGELOG.md).
 
 ## Supported devices & software
 
-| | This fork |
-|---|---|
+|  | This fork |
+| --- | --- |
 | **Hardware tested on** | Arturia KeyLab Essential 61 (not mk3) |
 | **Hardware likely compatible, untested** | Arturia KeyLab mkII (same underlying script family) |
 | **FL Studio tested on** | 2026 (build 26.1.6) |
@@ -110,7 +111,8 @@ wide range of configurations — but nothing here has been verified against it. 
 ## Installation
 
 1. Clone or download this repository into:
-   ```
+
+  ```text
    Documents/Image-Line/FL Studio/Settings/Hardware/
    ```
    Make sure the scripts end up in their own subfolder inside `Hardware/` — FL Studio ignores

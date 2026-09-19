@@ -53,7 +53,7 @@ def _get_param_names(plugin_idx):
 
 
 def _find_parameter_index(parameter_names, *keywords):
-    candidates = set(enumerate(parameter_names))
+    candidates = list(enumerate(parameter_names))
     for keyword in keywords:
         keyword = keyword.lower()
         if len(candidates) <= 1:
@@ -290,7 +290,7 @@ class ArturiaInputControls:
             track_name = 'Master Track'
 
         if self._is_slider_picked_up(track_index, value):
-            self._set_mixer_param(midi.REC_Mixer_Vol, value, track_index=track_index)
+            self._set_mixer_param(getattr(midi, 'REC_Mixer_Vol'), value, track_index=track_index)
             volume = int((value / 127.0) * config.MAX_MIXER_VOLUME)
             self._display_hint(track_name, 'Volume: %d%%' % volume)
         else:
@@ -482,7 +482,8 @@ class ArturiaInputControls:
         track_index = (self._current_index_mixer * 8 + knob_index) + 1
         if knob_index == 8:
             track_index = 0
-        param_id = midi.REC_Mixer_Pan if self._mixer_knobs_panning else midi.REC_Mixer_SS
+        param_id = (getattr(midi, 'REC_Mixer_Pan') if self._mixer_knobs_panning
+                else getattr(midi, 'REC_Mixer_SS'))
         self._set_mixer_param(param_id, delta, track_index=track_index, incremental=True)
 
     def _process_plugin_button_event(self, event, index):

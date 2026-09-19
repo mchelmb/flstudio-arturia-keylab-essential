@@ -51,7 +51,7 @@ try:
     class KEYBDINPUT(ctypes.Structure):
         _fields_ = [('wVk', wintypes.WORD), ('wScan', wintypes.WORD),
                     ('dwFlags', wintypes.DWORD), ('time', wintypes.DWORD),
-                    ('dwExtraInfo', wintypes.ULONG_PTR)]
+                    ('dwExtraInfo', ctypes.c_void_p)]
     class INPUT(ctypes.Structure):
         _fields_ = [('type', wintypes.DWORD), ('ki', KEYBDINPUT)]
     CTYPES_SENDINPUT_AVAILABLE = True

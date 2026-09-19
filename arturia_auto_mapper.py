@@ -572,6 +572,8 @@ class AutoMapper:
 
     def _advance_scan(self):
         scan = self._scan
+        if scan is None:
+            return
         channel_number = scan['channel_number']
         end = min(scan['next_index'] + SCAN_CHUNK_SIZE, scan['count'])
         for i in range(scan['next_index'], end):
