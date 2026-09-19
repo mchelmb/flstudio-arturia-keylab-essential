@@ -10,6 +10,8 @@ $root = $PSScriptRoot
 $venv = Join-Path $root '.venv'
 $python = Join-Path $venv 'Scripts\python.exe'
 
+git -C $root config core.hooksPath .githooks
+
 if ($Recreate -and (Test-Path $venv)) {
     Remove-Item $venv -Recurse -Force
 }
@@ -24,4 +26,5 @@ if (-not (Test-Path $python)) {
 Write-Host ''
 Write-Host "Development environment ready: $venv" -ForegroundColor Green
 Write-Host 'Select .venv in VS Code with Python: Select Interpreter.'
+Write-Host 'Git pre-commit version updater enabled through .githooks.'
 Write-Host 'Do not copy .venv, requirements-dev.txt, or pyrightconfig.json to FL Studio.'

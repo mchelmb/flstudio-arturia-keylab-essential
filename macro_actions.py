@@ -743,7 +743,7 @@ class Actions:
         def scaled_fn(delta):
             fn(factor*delta)
         # Make sure to preserve the help doc
-        scaled_fn.__doc__ == fn.__doc__
+        scaled_fn.__doc__ = fn.__doc__
         return scaled_fn
 
     @staticmethod

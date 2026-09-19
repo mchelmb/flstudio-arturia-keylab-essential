@@ -1,0 +1,20 @@
+#!/bin/sh
+
+repo_root=$(git rev-parse --show-toplevel) || exit 1
+version_script="$repo_root/bump_version.ps1"
+
+if [ ! -f "$version_script" ]; then
+    echo "Version bump script not found: $version_script" >&2
+    exit 1
+fi
+
+if command -v pwsh >/dev/null 2>&1; then
+    pwsh -NoProfile -ExecutionPolicy Bypass -File "$version_script" || exit 1
+elif command -v powershell.exe >/dev/null 2>&1; then
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$version_script" || exit 1
+else
+    echo "PowerShell is required to bump the build version." >&2
+    exit 1
+fi
+
+git add -- "$repo_root/version.py"

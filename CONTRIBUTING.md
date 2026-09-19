@@ -54,6 +54,11 @@ Use the project-local environment:
 Select `.venv` as the VS Code interpreter. The FL Studio API package supplies development-time
 types and documentation; FL Studio itself remains the only real runtime for host APIs.
 
+The setup script also configures Git to use `.githooks`. The pre-commit hook runs
+`bump_version.ps1`, advances `version.py`'s `CHANGE_DATE` monotonically, and stages that file
+automatically. Do not bypass the hook unless you intentionally want to preserve the current build
+number.
+
 Before submitting a change:
 
 ```powershell
